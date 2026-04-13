@@ -1,1 +1,31 @@
-/* You can add global styles to this file, and also import other style files */
+@use './styles/variables' as *;
+@import "leaflet/dist/leaflet.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  background: $color-bg-light;
+  color: $color-text-main;
+}
+
+a {
+  color: inherit;
+}
+
+.woman-marker {
+  background: transparent;
+}
+
+.woman-marker__dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: $color-accent;
+  border: 3px solid $color-primary;
+  box-shadow: 0 0 0 6px rgba(47, 107, 63, 0.15);
+}

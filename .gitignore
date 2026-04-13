@@ -31,6 +31,7 @@ yarn-error.log
 
 # Miscellaneous
 /.angular/cache
+.angular/
 .sass-cache/
 /connect.lock
 /coverage
@@ -38,6 +39,13 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.log.*
+firestore-debug.log
+ui-debug.log
 
 # System files
 .DS_Store

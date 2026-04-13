@@ -1,0 +1,259 @@
+@use '../../../styles/variables' as *;
+
+.map-page {
+  position: relative;
+  min-height: 100vh;
+  background: $color-bg-light;
+  color: $color-text-main;
+}
+
+.sidebar {
+  position: fixed;
+  top: 10px;
+  bottom: 10px;
+  left: 10px;
+  width: 300px;
+  padding: 24px;
+  background: $color-surface;
+  border-radius: 12px;
+  border: 1px solid rgba(27, 36, 27, 0.08);
+  overflow-y: auto;
+  z-index: 1002;
+  transform: translateX(-120%);
+  transition: transform 0.3s ease;
+}
+
+.sidebar.is-open {
+  transform: translateX(0);
+}
+
+.preview {
+  position: fixed;
+  top: 10px;
+  bottom: 10px;
+  right: 10px;
+  width: 300px;
+  padding: 24px;
+
+  border-left: 1px solid rgba(27, 36, 27, 0.08);
+  border-radius: 12px;
+  background: $color-surface;
+
+  overflow-y: auto;
+  z-index: 1002;
+  transform: translateX(+120%);
+  transition: transform 0.3s ease;
+}
+
+.preview.is-open {
+  transform: translateX(0);
+}
+
+.sidebar__close,
+.preview__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: $color-muted;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.map-area {
+  position: absolute;
+  inset: 0;
+}
+
+.map-frame {
+  width: 100%;
+  height: 100%;
+}
+
+.filter-toggle {
+  position: fixed;
+  top: 24px;
+  left: 50px;
+  z-index: 1001;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: $color-primary;
+  color: $color-surface;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.sidebar__header,
+.preview__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  > div {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-group h3 {
+  font-size: 14px;
+  margin: 0 0 12px;
+  color: $color-primary;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.check input {
+  accent-color: $color-primary;
+}
+
+.preview h2 {
+  margin: 0 0 4px;
+}
+
+.years {
+  margin: 0;
+  font-size: 14px;
+  color: $color-muted;
+}
+
+.categories_container {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+  overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: none;
+}
+
+.category {
+  font-size: 13px;
+  background-color: $color-primary;
+  border-radius: 14px;
+  padding: 5px 8px;
+  color: $color-surface;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.preview__text {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.gallery {
+  margin-bottom: 16px;
+}
+
+.gallery__viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(27, 36, 27, 0.06);
+}
+
+.gallery__track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.gallery__track img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.gallery__btn {
+  border: 1px solid rgba(27, 36, 27, 0.2);
+  background: transparent;
+  color: $color-text-main;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gallery__dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.gallery__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(27, 36, 27, 0.25);
+  cursor: pointer;
+}
+
+.gallery__dot.is-active {
+  background: $color-primary;
+}
+
+.details {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: $color-primary;
+  color: $color-surface;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .sidebar,
+  .preview {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 70vh;
+    transform: translateY(120%);
+  }
+
+  .sidebar.is-open,
+  .preview.is-open {
+    transform: translateY(0);
+  }
+
+  .filter-toggle {
+    bottom: 16px;
+    right: 16px;
+  }
+}

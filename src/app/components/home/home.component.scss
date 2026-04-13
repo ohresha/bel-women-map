@@ -1,0 +1,137 @@
+@use '../../../styles/variables' as *;
+
+.home {
+  min-height: 100vh;
+  background: $color-bg-light;
+  color: $color-text-main;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+}
+
+.admin-link {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  font-size: 14px;
+  text-decoration: none;
+  color: $color-text-main;
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
+}
+
+.admin-link:hover,
+.admin-link:focus-visible {
+  opacity: 1;
+}
+
+.split {
+  width: min(1100px, 100%);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.slideshow {
+  position: relative;
+  min-height: 320px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(160deg, $color-primary 0%, $color-accent 100%);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+}
+
+$total: 15s;
+@for $i from 1 through 5 {
+  .slide:nth-child(#{$i}) {
+    animation: fade $total #{($i - 1) * 3s} infinite;
+  }
+}
+
+@keyframes fade {
+  0%        { opacity: 0; }
+  5%        { opacity: 1; }
+  25%       { opacity: 1; }
+  30%       { opacity: 0; }
+  100%      { opacity: 0; }
+}
+
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kicker {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: $color-primary;
+  margin: 0 0 8px;
+}
+
+h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  color: $color-text-main;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.cta {
+  background: $color-primary;
+  color: $color-surface;
+  text-decoration: none;
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.cta:hover,
+.cta:focus-visible {
+  transform: translateY(-2px);
+  background: $color-primary-dark;
+}
+
+.content__footer {
+  font-size: 14px;
+  color: $color-muted;
+}
+
+@media (min-width: 900px) {
+  .home {
+    padding: 48px;
+  }
+
+  .split {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 48px;
+  }
+
+  .slideshow {
+    min-height: 520px;
+  }
+}

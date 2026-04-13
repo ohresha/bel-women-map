@@ -1,0 +1,31 @@
+<main class="home">
+  <a class="admin-link" routerLink="/login">Вход для администратора</a>
+
+  <section class="split" aria-label="Главный блок">
+    <div class="slideshow" aria-label="Фотографии выдающихся женщин">
+      @for (image of images; track image.id) {
+      <img class="slide" [src]="image.src" [alt]="image.alt" />
+    }
+    </div>
+
+    <div class="content">
+      <header class="content__header">
+        <p class="kicker">Интерактивная карта</p>
+        <h1>Знаменитые женщины Беларуси</h1>
+      </header>
+
+      <p class="subtitle">
+        Истории, достижения и вклад белорусских женщин в историю, науку, искусство и культуру —
+        в одном современном и удобном пространстве.
+      </p>
+
+      <div class="actions">
+        <a class="cta" routerLink="/map">Перейти к карте</a>
+      </div>
+
+      <footer class="content__footer">
+        Открывайте биографии, места и события, которые формировали нашу страну.
+      </footer>
+    </div>
+  </section>
+</main>
