@@ -3,11 +3,11 @@
     <div #mapContainer class="map-frame"></div>
   </section>
 
-  <button class="filter-toggle" type="button" (click)="toggleFilters()">
+  <button #filtersToggle class="filter-toggle" type="button" (click)="toggleFilters(); $event.stopPropagation()">
     Фильтры
   </button>
 
-  <aside class="sidebar" [class.is-open]="isFiltersOpen">
+  <aside #filtersPanel class="sidebar" [class.is-open]="isFiltersOpen">
     <button class="sidebar__close" type="button" (click)="closeFilters()">×</button>
     <div class="sidebar__header">
       <h2>Фильтры</h2>
@@ -41,47 +41,54 @@
     </div>
   </aside>
 
-  <aside class="preview" [class.is-open]="isPreviewOpen && selectedWoman">
-  <ng-container *ngIf="selectedWoman as woman">
-    <button class="preview__close" type="button" (click)="closePreview()">×</button>
-    <div class="preview__header">
-      <div>
-        <h2>{{ woman.name }}</h2>
-        <p class="years">
-          {{ woman.birth || '' }}
-          <span *ngIf="woman.death">– {{ woman.death }}</span>
-        </p>
-        <div class="categories_container">
-          @for (category of woman.categories; track $index){
-            <div class="category">{{ category }}</div>
-          }
+  <aside #previewPanel class="preview" [class.is-open]="isPreviewOpen && selectedWoman">
+    <ng-container *ngIf="selectedWoman as woman">
+      <button class="preview__close" type="button" (click)="closePreview()">×</button>
+
+      <div class="preview__content">
+        <div class="preview__header">
+          <div>
+            <h2>{{ woman.name }}</h2>
+            <p class="years">
+              {{ woman.birth || '' }}
+              <span *ngIf="woman.death">– {{ woman.death }}</span>
+            </p>
+            <p class="place">
+              {{ woman.region }} - {{ woman.city }}
+            </p>
+            <div class="categories_container">
+              @for (category of woman.categories; track $index){
+                <div class="category">{{ category }}</div>
+              }
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    <p class="preview__text">{{ woman.shortInfo }}</p>
-    <div class="gallery" *ngIf="woman.images?.length as total">
-      <div class="gallery__viewport">
-        <div class="gallery__track"
-          [style.transform]="'translateX(-' + activeImageIndex * 100 + '%)'"
-          [style.width.%]="total * 100">
-          <img *ngFor="let image of woman.images; trackBy: trackByImage"
-            [src]="image" [alt]="woman.name" />
+
+        <p class="preview__text">{{ woman.shortInfo }}</p>
+        <div class="gallery" *ngIf="woman.images?.length as total">
+          <div class="gallery__viewport" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event, total)">
+            <div class="gallery__track"
+              [style.transform]="'translateX(-' + activeImageIndex * 100 + '%)'"
+              [style.width.%]="total * 100">
+              <img *ngFor="let image of woman.images; trackBy: trackByImage"
+                [src]="image" [alt]="woman.name" />
+            </div>
+          </div>
+          <div class="gallery__controls" *ngIf="total > 1">
+            <button class="gallery__btn" type="button" (click)="prevImage(total)">Назад</button>
+            <div class="gallery__dots">
+              <button class="gallery__dot" type="button"
+                *ngFor="let image of woman.images; let i = index; trackBy: trackByImage"
+                [class.is-active]="i === activeImageIndex"
+                (click)="setImageIndex(i)"
+                [attr.aria-label]="'Перейти к фото ' + (i + 1)">
+              </button>
+            </div>
+            <button class="gallery__btn" type="button" (click)="nextImage(total)">Вперед</button>
+          </div>
         </div>
+        <a class="details" [routerLink]="['/woman', woman.id]">Подробнее</a>
       </div>
-      <div class="gallery__controls" *ngIf="total > 1">
-        <button class="gallery__btn" type="button" (click)="prevImage(total)">Назад</button>
-        <div class="gallery__dots">
-          <button class="gallery__dot" type="button"
-            *ngFor="let image of woman.images; let i = index; trackBy: trackByImage"
-            [class.is-active]="i === activeImageIndex"
-            (click)="setImageIndex(i)"
-            [attr.aria-label]="'Перейти к фото ' + (i + 1)">
-          </button>
-        </div>
-        <button class="gallery__btn" type="button" (click)="nextImage(total)">Вперед</button>
-      </div>
-    </div>
-    <a class="details" [routerLink]="['/woman', woman.id]">Подробнее</a>
-  </ng-container>
-</aside>
+    </ng-container>
+  </aside>
 </main>

@@ -1,0 +1,93 @@
+<main class="detail-page" *ngIf="profile && details; else notFound">
+  <nav class="detail-nav fade-in" fadeInOnScroll>
+    <a class="back-link" [routerLink]="['/map']">Назад к карте</a>
+  </nav>
+
+  <section class="hero fade-in" fadeInOnScroll>
+    <div class="hero__media">
+      <img [src]="details.heroImage" [alt]="profile.name" />
+      <div class="hero__gradient"></div>
+      <div class="hero__title">
+        <h1>{{ profile.name }}</h1>
+        <p class="hero__meta">
+          {{ profile.birth || '' }}<span *ngIf="profile.death">– {{ profile.death }}</span>
+          <span class="hero__divider">·</span>
+          {{ profile.region }}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary fade-in" fadeInOnScroll>
+    <p>{{ profile.shortInfo }}</p>
+  </section>
+
+  <section class="biography">
+    <article
+  class="bio-block fade-in"
+  fadeInOnScroll
+  *ngFor="let block of details.fullBiography; trackBy: trackByBlock">
+  
+  @switch (block.type) {
+    @case ('text') {
+      <div>
+        <h2>{{ $any(block).title }}</h2>
+        <p>{{ $any(block).text }}</p>
+      </div>
+    }
+    @case ('quote') {
+      <div class="quote">
+        <blockquote>"{{ block.text }}"</blockquote>
+        <p class="quote__author" *ngIf="$any(block).author">— {{ $any(block).author }}</p>
+      </div>
+    }
+    @case ('image-gallery') {
+      <!-- <div class="inline-gallery">
+        <h2 *ngIf="$any(block).title">{{ $any(block).title }}</h2>
+        <div class="inline-gallery__grid">
+          <figure *ngFor="let image of $any(block).images; trackBy: trackByImage">
+            <img
+              [src]="image.src"
+              [alt]="image.caption || profile.name"
+              (click)="openLightbox(image.src)" />
+            <figcaption *ngIf="image.caption">{{ image.caption }}</figcaption>
+          </figure>
+        </div>
+      </div> -->
+    }
+  }
+</article>
+  </section>
+
+  <section class="carousel fade-in" fadeInOnScroll>
+    <h2>Галерея</h2>
+    <div class="carousel__track">
+      <button
+        class="carousel__item"
+        type="button"
+        *ngFor="let image of details.previewImages; trackBy: trackByImage"
+        (click)="openLightbox(image)">
+        <img [src]="image" [alt]="profile.name" />
+      </button>
+    </div>
+  </section>
+</main>
+
+<ng-template #notFound>
+  <main class="detail-page">
+    <nav class="detail-nav">
+      <a class="back-link" [routerLink]="['/map']">Назад к карте</a>
+    </nav>
+    <section class="not-found">
+      <h1>Персона не найдена</h1>
+      <p>Проверьте ссылку или выберите героиню на карте.</p>
+    </section>
+  </main>
+</ng-template>
+
+<div class="lightbox" *ngIf="lightboxImage" (click)="closeLightbox()">
+  <div class="lightbox__content" (click)="$event.stopPropagation()">
+    <button class="lightbox__close" type="button" (click)="closeLightbox()">×</button>
+    <img [src]="lightboxImage" [alt]="profile?.name || 'Фото'" />
+  </div>
+</div>

@@ -5,6 +5,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostListener,
   NgZone,
   OnDestroy,
   ViewChild
@@ -24,10 +25,14 @@ import { MapDataService, MapFilters, WomanProfile } from '../../services/map-dat
 
 export class MapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer') mapContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('filtersPanel') filtersPanel!: ElementRef<HTMLElement>;
+  @ViewChild('previewPanel') previewPanel!: ElementRef<HTMLElement>;
+  @ViewChild('filtersToggle') filtersToggle!: ElementRef<HTMLButtonElement>;
   
   private map?: L.Map;
   private markersLayer = L.layerGroup();
   private timerId?: number;
+  private suppressOutsideClick = false;
 
   regions: any;
   categories: any;
@@ -156,6 +161,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
 
       marker.on('click', () => {
         this.zone.run(() => {
+          this.suppressOutsideClick = true;
+          window.setTimeout(() => {
+            this.suppressOutsideClick = false;
+          }, 0);
           this.selectedWoman = woman;
           this.isPreviewOpen = true;
           this.isFiltersOpen = false;
@@ -192,6 +201,32 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }, 250);
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.suppressOutsideClick) {
+      return;
+    }
+
+    const target = event.target as Node | null;
+    if (!target) {
+      return;
+    }
+
+    if (this.isFiltersOpen && !this.isClickInside(target, this.filtersPanel, this.filtersToggle)) {
+      this.closeFilters();
+      this.cdr.markForCheck();
+    }
+
+    if (this.isPreviewOpen && !this.isClickInside(target, this.previewPanel)) {
+      this.closePreview();
+      this.cdr.markForCheck();
+    }
+  }
+
+  private isClickInside(target: Node, ...refs: Array<ElementRef<HTMLElement> | undefined>): boolean {
+    return refs.some((ref) => !!ref?.nativeElement && ref.nativeElement.contains(target));
+  }
+
   trackById(_: number, item: WomanProfile): string {
     return item.id;
   }
@@ -217,4 +252,25 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   setImageIndex(index: number): void {
     this.activeImageIndex = index;
   }
+
+  private touchStartX = 0;
+  private touchEndX = 0;
+
+  onTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.changedTouches[0].screenX;
+  }
+
+  onTouchEnd(event: TouchEvent, total: number): void {
+    this.touchEndX = event.changedTouches[0].screenX;
+    const diff = this.touchStartX - this.touchEndX;
+
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        this.nextImage(total);
+      } else {
+        this.prevImage(total);
+      }
+    }
+  }
+
 }

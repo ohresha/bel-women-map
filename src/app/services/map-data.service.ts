@@ -14,6 +14,33 @@ export interface WomanProfile {
   images: string[];
 }
 
+export type BiographyBlock =
+  | {
+      type: 'text';
+      title: string;
+      text: string;
+    }
+  | {
+      type: 'quote';
+      text: string;
+      author?: string;
+    }
+  | {
+      type: 'image-gallery';
+      title?: string;
+      images: Array<{
+        src: string;
+        caption?: string;
+      }>;
+    };
+
+export interface WomanDetails {
+  id: string;
+  heroImage: string;
+  previewImages: string[];
+  fullBiography: BiographyBlock[];
+}
+
 export interface MapFilters {
   search: string;
   regions: string[];
@@ -101,8 +128,200 @@ export class MapDataService {
     }
   ];
 
+  private readonly details: WomanDetails[] = [
+    {
+      id: 'kharujaya',
+      heroImage: 'assets/homepage_women/vera_kharujaya.jpg',
+      previewImages: [
+        'assets/homepage_women/vera_kharujaya.jpg'
+      ],
+      fullBiography: [
+        {
+          type: 'text',
+          title: 'Детство и образование',
+          text:
+            'Вера Хоружая росла в атмосфере стремления к знаниям и ответственности. Ранние годы сформировали в ней сильный характер, который позже проявился в общественной и подпольной работе.'
+        },
+        {
+          type: 'quote',
+          text: 'Сила человека измеряется тем, насколько он верен своим идеалам в самые трудные времена.',
+          author: 'Из воспоминаний современников'
+        },
+        {
+          type: 'text',
+          title: 'Общественная деятельность',
+          text:
+            'Хоружая активно участвовала в подпольном движении и была известна своей стойкостью. Ее деятельность стала символом сопротивления и гражданской смелости.'
+        },
+        {
+          type: 'image-gallery',
+          title: 'Исторические материалы',
+          images: [
+            {
+              src: 'assets/homepage_women/vera_kharujaya.jpg',
+              caption: 'Архивный портрет'
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'stanuta',
+      heroImage: 'assets/homepage_women/steph_stanuta.jpg',
+      previewImages: [
+        'assets/homepage_women/steph_stanuta.jpg'
+      ],
+      fullBiography: [
+        {
+          type: 'text',
+          title: 'Ранние годы',
+          text:
+            'Стефания Станюта рано проявила интерес к театру. Ее артистический путь начался с небольших ролей и постепенно привел к признанию на национальной сцене.'
+        },
+        {
+          type: 'quote',
+          text: 'Сцена — это место, где правда звучит громче всего.',
+          author: 'Стефания Станюта'
+        },
+        {
+          type: 'text',
+          title: 'Творческий путь',
+          text:
+            'Ее роли отличались глубиной и психологической точностью. Станюта стала одной из ключевых фигур белорусского театра.'
+        },
+        {
+          type: 'image-gallery',
+          title: 'Фотографии постановок',
+          images: [
+            {
+              src: 'assets/homepage_women/steph_stanuta.jpg',
+              caption: 'Сцена из спектакля'
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'domracheva',
+      heroImage: 'assets/homepage_women/daria_domracheva.png',
+      previewImages: [
+        'assets/homepage_women/daria_domracheva.png',
+        'assets/homepage_women/daria_domracheva.png'
+      ],
+      fullBiography: [
+        {
+          type: 'text',
+          title: 'Начало спортивной карьеры',
+          text:
+            'Дарья Домрачева пришла в биатлон с дисциплиной и упорством. Ее ранние результаты быстро привлекли внимание тренеров и болельщиков.'
+        },
+        {
+          type: 'quote',
+          text: 'Победа — это сумма маленьких ежедневных усилий.',
+          author: 'Дарья Домрачева'
+        },
+        {
+          type: 'text',
+          title: 'Олимпийские достижения',
+          text:
+            'Олимпийские медали Домрачевой стали символом современной спортивной Беларуси. Ее выступления вдохновили новое поколение атлетов.'
+        },
+        {
+          type: 'image-gallery',
+          title: 'Спортивные моменты',
+          images: [
+            {
+              src: 'assets/homepage_women/daria_domracheva.png',
+              caption: 'Олимпийский пьедестал'
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'chikalova',
+      heroImage: 'assets/homepage_women/irina_chikalova.jpg',
+      previewImages: [
+        'assets/homepage_women/irina_chikalova.jpg'
+      ],
+      fullBiography: [
+        {
+          type: 'text',
+          title: 'Спортивная база',
+          text:
+            'Ирина Чикалова прославилась как спортсменка, умеющая сочетать выносливость и стратегию. Ее тренировки всегда были примером дисциплины.'
+        },
+        {
+          type: 'quote',
+          text: 'Бег — это диалог с собой и со временем.',
+          author: 'Ирина Чикалова'
+        },
+        {
+          type: 'text',
+          title: 'Просветительская роль',
+          text:
+            'После активной спортивной карьеры она посвятила себя популяризации здорового образа жизни и поддержке молодых спортсменов.'
+        },
+        {
+          type: 'image-gallery',
+          title: 'Марафонские трассы',
+          images: [
+            {
+              src: 'assets/homepage_women/irina_chikalova.jpg',
+              caption: 'На дистанции'
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'aleksandrauskaja',
+      heroImage: 'assets/homepage_women/larisa_aleksandrauskaja.jpg',
+      previewImages: [
+        'assets/homepage_women/larisa_aleksandrauskaja.jpg'
+      ],
+      fullBiography: [
+        {
+          type: 'text',
+          title: 'Образование и наука',
+          text:
+            'Лариса Александраускас посвятила себя развитию образования. Ее исследования и методики стали заметным вкладом в региональную педагогическую практику.'
+        },
+        {
+          type: 'quote',
+          text: 'Настоящее просвещение начинается с уважения к личности.',
+          author: 'Лариса Александраускас'
+        },
+        {
+          type: 'text',
+          title: 'Педагогическая миссия',
+          text:
+            'Она активно работала с молодыми специалистами, продвигая идеи современного образования и практической науки.'
+        },
+        {
+          type: 'image-gallery',
+          title: 'Архивные материалы',
+          images: [
+            {
+              src: 'assets/homepage_women/larisa_aleksandrauskaja.jpg',
+              caption: 'Портрет исследователя'
+            }
+          ]
+        }
+      ]
+    }
+  ];
+
   getAll(): WomanProfile[] {
     return [...this.data];
+  }
+
+  getById(id: string): WomanProfile | undefined {
+    return this.data.find((woman) => woman.id === id);
+  }
+
+  getDetailsById(id: string): WomanDetails | undefined {
+    return this.details.find((detail) => detail.id === id);
   }
 
   getRegions(): string[] {
