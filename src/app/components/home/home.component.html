@@ -1,5 +1,13 @@
 <main class="home">
-  <a class="admin-link" routerLink="/login">Вход для администратора</a>
+  <!-- <a class="admin-link" routerLink="/login">Вход для администратора</a> -->
+
+  <div class="national-mark" aria-hidden="true">
+    <div class="national-mark__chip">
+      <img src="assets/Flag_of_Belarus.svg" alt="Флаг" class="national-mark__flag">
+      <img src="assets/Emblem_of_Belarus.svg" alt="Герб" class="national-mark__emblem">
+      <span class="national-mark__text">Беларусь</span>
+    </div>
+  </div>
 
   <section class="split" aria-label="Главный блок">
     <div class="slideshow" aria-label="Фотографии выдающихся женщин">
@@ -19,8 +27,49 @@
         в одном современном и удобном пространстве.
       </p>
 
+      <div class="stats" aria-label="Ключевые факты проекта">
+        <div class="stat-card">
+          <svg class="stat-card__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4 0-8 2-8 6v1h16v-1c0-4-4-6-8-6Z"
+            />
+          </svg>
+          <div class="stat-card__text">
+            <div class="stat-card__value">Более 100 имён</div>
+            <!-- <div class="stat-card__label">в базе проекта</div> -->
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <svg class="stat-card__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2Zm13 8H6v10h14V10ZM6 8h14V6H6v2Z"
+            />
+          </svg>
+          <div class="stat-card__text">
+            <div class="stat-card__value">От XII века до наших дней</div>
+            <!-- <div class="stat-card__label">временной охват</div> -->
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <svg class="stat-card__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 2a8 8 0 0 0-8 8c0 6 8 12 8 12s8-6 8-12a8 8 0 0 0-8-8Zm0 11a3 3 0 1 1 3-3 3 3 0 0 1-3 3Z"
+            />
+          </svg>
+          <div class="stat-card__text">
+            <div class="stat-card__value">Все регионы страны</div>
+            <!-- <div class="stat-card__label">география</div> -->
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
       <div class="actions">
         <a class="cta" routerLink="/map">Перейти к карте</a>
+        <a class="cta cta--outline" routerLink="/history-context">Историческая справка</a>
       </div>
 
       <footer class="content__footer">

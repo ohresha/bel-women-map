@@ -15,7 +15,7 @@ export class FadeInOnScrollDirective implements AfterViewInit, OnDestroy {
   constructor(
     private readonly elementRef: ElementRef<HTMLElement>,
     private readonly zone: NgZone,
-    private readonly cdr: ChangeDetectorRef  // ← добавьте
+    private readonly cdr: ChangeDetectorRef  
   ) {}
 
   ngAfterViewInit(): void {
@@ -26,7 +26,7 @@ export class FadeInOnScrollDirective implements AfterViewInit, OnDestroy {
             if (entry.isIntersecting) {
               this.zone.run(() => {
                 this.isVisible = true;
-                this.cdr.markForCheck(); // ← добавьте
+                this.cdr.markForCheck();
               });
               this.observer?.disconnect();
             }
@@ -57,19 +57,22 @@ export class WomanDetailComponent implements OnDestroy {
 
   private routeSub?: Subscription;
 
-  constructor(
-  private readonly route: ActivatedRoute,
-  private readonly mapData: MapDataService,
-  private readonly cdr: ChangeDetectorRef
-) {
-  this.routeSub = this.route.paramMap.subscribe((params) => {
-    const id = params.get('id') ?? '';
-    this.profile = this.mapData.getById(id);
-    this.details = this.mapData.getDetailsById(id);
-    this.lightboxImage = undefined;
-    this.cdr.markForCheck(); // ← добавьте
-  });
-}
+  constructor( private readonly route: ActivatedRoute, private readonly mapData: MapDataService, private readonly cdr: ChangeDetectorRef ) {
+    this.routeSub = this.route.paramMap.subscribe((params) => {
+      const id = params.get('id') ?? '';
+      
+      this.mapData.getProfileById(id).subscribe(profile => {
+        this.profile = profile;
+        this.cdr.markForCheck();
+      });
+      this.mapData.getDetailsById(id).subscribe(details => {
+        this.details = details;
+        this.cdr.markForCheck();
+      });
+      this.lightboxImage = undefined;
+    });
+    
+  }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();

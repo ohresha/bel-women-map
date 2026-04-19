@@ -12,7 +12,7 @@
         <p class="hero__meta">
           {{ profile.birth || '' }}<span *ngIf="profile.death">– {{ profile.death }}</span>
           <span class="hero__divider">·</span>
-          {{ profile.region }}
+          {{ profile.region }} - {{ profile.city }}
         </p>
       </div>
     </div>
@@ -24,39 +24,25 @@
 
   <section class="biography">
     <article
-  class="bio-block fade-in"
-  fadeInOnScroll
-  *ngFor="let block of details.fullBiography; trackBy: trackByBlock">
+      class="bio-block fade-in"
+      fadeInOnScroll
+      *ngFor="let block of details.fullBiography; trackBy: trackByBlock">
   
-  @switch (block.type) {
-    @case ('text') {
-      <div>
-        <h2>{{ $any(block).title }}</h2>
-        <p>{{ $any(block).text }}</p>
-      </div>
-    }
-    @case ('quote') {
-      <div class="quote">
-        <blockquote>"{{ block.text }}"</blockquote>
-        <p class="quote__author" *ngIf="$any(block).author">— {{ $any(block).author }}</p>
-      </div>
-    }
-    @case ('image-gallery') {
-      <!-- <div class="inline-gallery">
-        <h2 *ngIf="$any(block).title">{{ $any(block).title }}</h2>
-        <div class="inline-gallery__grid">
-          <figure *ngFor="let image of $any(block).images; trackBy: trackByImage">
-            <img
-              [src]="image.src"
-              [alt]="image.caption || profile.name"
-              (click)="openLightbox(image.src)" />
-            <figcaption *ngIf="image.caption">{{ image.caption }}</figcaption>
-          </figure>
-        </div>
-      </div> -->
-    }
-  }
-</article>
+      @switch (block.type) {
+        @case ('text') {
+          <div>
+            <h2>{{ $any(block).title }}</h2>
+            <p>{{ $any(block).text }}</p>
+          </div>
+        }
+        @case ('quote') {
+          <div class="quote">
+            <blockquote>"{{ block.text }}"</blockquote>
+            <p class="quote__author" *ngIf="$any(block).author">— {{ $any(block).author }}</p>
+          </div>
+        }
+      }
+    </article>
   </section>
 
   <section class="carousel fade-in" fadeInOnScroll>
@@ -79,8 +65,8 @@
       <a class="back-link" [routerLink]="['/map']">Назад к карте</a>
     </nav>
     <section class="not-found">
-      <h1>Персона не найдена</h1>
-      <p>Проверьте ссылку или выберите героиню на карте.</p>
+      <h1>Ничего нет</h1>
+      <p>Проверьте ссылку или выберите метку на карте.</p>
     </section>
   </main>
 </ng-template>

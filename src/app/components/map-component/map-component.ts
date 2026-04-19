@@ -1,26 +1,17 @@
 import { NgFor, NgIf } from '@angular/common';
-import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  HostListener,
-  NgZone,
-  OnDestroy,
-  ViewChild
-} from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import * as L from 'leaflet';
 import { MapDataService, MapFilters, WomanProfile } from '../../services/map-data.service';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-map-component',
   imports: [FormsModule, NgFor, NgIf, RouterLink],
   templateUrl: './map-component.html',
   styleUrl: './map-component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush // ИЗУЧИТЬ
 })
 
 export class MapComponent implements AfterViewInit, OnDestroy {
@@ -38,18 +29,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   categories: any;
   centuries: any;
 
-  constructor(
-    private readonly mapData: MapDataService,
-    private readonly zone: NgZone,
-    private readonly cdr: ChangeDetectorRef
-  ) {
+  constructor( private readonly mapData: MapDataService, private readonly zone: NgZone, private readonly cdr: ChangeDetectorRef, private http: HttpClient ) {
     this.regions = this.mapData.getRegions();
     this.categories = this.mapData.getCategories();
     this.centuries = this.mapData.getCenturies();
   }
 
   filters: MapFilters = {
-    search: '',
     regions: [],
     categories: [],
     centuries: []
@@ -60,8 +46,6 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   isFiltersOpen = false;
   isPreviewOpen = false;
   activeImageIndex = 0;
-
-  
 
   ngAfterViewInit(): void {
     this.isFiltersOpen = !window.matchMedia('(max-width: 900px)').matches;
@@ -127,28 +111,84 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
 
   private applyFilters(): void {
-    this.filteredWomen = this.mapData.filter(this.filters);
-    if (this.selectedWoman && !this.filteredWomen.find((item) => item.id === this.selectedWoman?.id)) {
-      this.selectedWoman = undefined;
-      this.isPreviewOpen = false;
-      this.activeImageIndex = 0;
-    }
+    this.mapData.filter(this.filters).subscribe((data: WomanProfile[]) => {
+      this.filteredWomen = data;
+      if (this.selectedWoman && !this.filteredWomen.find((item) => item.id === this.selectedWoman?.id)) {
+        this.selectedWoman = undefined;
+        this.isPreviewOpen = false;
+        this.activeImageIndex = 0;
+      }
     this.renderMarkers();
+    });
   }
 
   private initMap(): void {
     this.map = L.map(this.mapContainer.nativeElement, {
-      // dragging: false,
-      zoomControl: true
+      zoomControl: true,
+      preferCanvas: true,
+      
     }).setView([53.9, 27.566], 7);
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      minZoom: 6, 
-      attribution: '&copy; OpenStreetMap'
+      minZoom: 7, 
+      attribution: '&copy; OpenStreetMap',
+      updateWhenZooming: false,
     }).addTo(this.map);
 
     this.markersLayer.addTo(this.map);
+    this.addBorders();
+  }
+
+  private addBorders(): void {
+    const worldCoords = [
+      [-180, -90],
+      [180, -90],
+      [180, 90],
+      [-180, 90],
+      [-180, -90]
+    ];
+
+    this.http.get('assets/data/by_borders_lvl0.json').subscribe((geoJson: any) => {
+      const feature = geoJson.features[0];
+      const type = feature.geometry.type;
+      const coords = feature.geometry.coordinates;
+
+      let maskCoordinates: any[] = [worldCoords];
+
+      if (type === 'Polygon') {
+        coords.forEach((ring: any) => maskCoordinates.push(ring));
+      } else if (type === 'MultiPolygon') {
+        coords.forEach((polygon: any) => {
+          polygon.forEach((ring: any) => maskCoordinates.push(ring));
+        });
+      }
+
+      const mask = {
+        "type": "Feature",
+        "properties": {},
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": maskCoordinates
+        }
+      };
+
+      const borderLayer = L.geoJSON(mask as any, {
+        style: {
+          color: '#228B22',
+          weight: 3,
+          fillColor: '#ffffff', 
+          fillOpacity: 1,
+          fillRule: 'evenodd'
+        }
+      }).addTo(this.map!);
+
+      const belarusOnly = L.geoJSON(geoJson);
+      const bounds = belarusOnly.getBounds();
+      
+      // this.map?.fitBounds(bounds);
+      this.map?.setMaxBounds(bounds.pad(0.1)); 
+    });
   }
 
   private renderMarkers(): void {
@@ -253,6 +293,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.activeImageIndex = index;
   }
 
+
+  // СВАЙПЫ ДЛЯ КАРТИНОК
   private touchStartX = 0;
   private touchEndX = 0;
 
