@@ -30,15 +30,6 @@
         <span>{{ category }}</span>
       </label>
     </div>
-    <div class="filter-group">
-      <h3>Век</h3>
-      <label class="check" *ngFor="let century of centuries">
-        <input type="checkbox"
-          [checked]="isSelected(filters.centuries, century)"
-          (change)="toggleCentury(century)" />
-        <span>{{ century }}</span>
-      </label>
-    </div>
   </aside>
 
   <aside #previewPanel class="preview" [class.is-open]="isPreviewOpen && selectedWoman">
@@ -65,7 +56,7 @@
         </div>
 
         <p class="preview__text">{{ woman.shortInfo }}</p>
-        <div class="gallery" *ngIf="woman.images?.length as total">
+        <div class="gallery" *ngIf="woman.images.length as total">
           <div class="gallery__viewport" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event, total)">
             <div class="gallery__track"
               [style.transform]="'translateX(-' + activeImageIndex * 100 + '%)'"
@@ -91,4 +82,45 @@
       </div>
     </ng-container>
   </aside>
+
+  <section class="timeline" [class.is-hidden]="isFiltersOpen || isPreviewOpen" aria-label="Временная лента">
+  <div class="timeline__inner">
+    <div class="timeline__head">
+      <div class="timeline__title">Временная лента</div>
+      <button
+        class="timeline__all-btn"
+        [class.is-active]="isAllTime"
+        (click)="isAllTime = !isAllTime; onTimelineChange()"
+        type="button"
+      >Все время</button>
+    </div>
+
+    <div class="timeline__slider-wrap" [class.is-disabled]="isAllTime">
+      <div class="timeline__thumb-label" [style.left]="thumbPercent + '%'">
+        {{ isAllTime ? 'Все время' : selectedCenturyLabel }}
+      </div>
+
+      <input
+        class="timeline__slider"
+        type="range"
+        [min]="timelineMin"
+        [max]="timelineMax"
+        step="1"
+        [value]="selectedCentury"
+        (input)="onTimelineInput($event)"
+        [disabled]="isAllTime"
+        [attr.aria-label]="'Выбор века: ' + selectedCenturyLabel"
+      />
+
+      <div class="timeline__ticks">
+        <span
+          *ngFor="let c of centuryTicks"
+          class="timeline__tick"
+          [class.is-active]="c === selectedCentury && !isAllTime"
+          [style.left]="getTickPercent(c) + '%'"
+        >{{ toRomanCentury(c) }}</span>
+      </div>
+    </div>
+  </div>
+</section>
 </main>
