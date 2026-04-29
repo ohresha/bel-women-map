@@ -1,79 +1,168 @@
-<main class="detail-page" *ngIf="profile && details; else notFound">
-  <nav class="detail-nav fade-in" fadeInOnScroll>
-    <a class="back-link" [routerLink]="['/map']">Назад к карте</a>
-  </nav>
+@if (profile && details) {
+  <main class="detail-page">
+    <div class="detail-shell">
+      <aside class="toc fade-in" fadeInOnScroll aria-label="Содержание статьи">
+        <div class="toc__panel">
+          <p class="toc__eyebrow">Навигация</p>
+          <h2 class="toc__title">Содержание</h2>
 
-  <section class="hero fade-in" fadeInOnScroll>
-    <div class="hero__media">
-      <img [src]="details.heroImage" [alt]="profile.name" />
-      <div class="hero__gradient"></div>
-      <div class="hero__title">
-        <h1>{{ profile.name }}</h1>
-        <p class="hero__meta">
-          {{ profile.birth || '' }}<span *ngIf="profile.death">– {{ profile.death }}</span>
-          <span class="hero__divider">·</span>
-          {{ profile.region }} - {{ profile.city }}
-        </p>
+          <button
+            class="toc__toggle"
+            type="button"
+            (click)="toggleMobileToc()"
+            [attr.aria-expanded]="isMobileTocOpen"
+            aria-controls="detail-toc-list">
+            {{ isMobileTocOpen ? 'Скрыть разделы' : 'Показать разделы' }}
+          </button>
+
+          <ul class="toc__list" id="detail-toc-list" [class.toc__list--open]="isMobileTocOpen">
+            @for (section of tocSections; track section.id) {
+              <li>
+                <a
+                  class="toc__link"
+                  [href]="'#' + section.id"
+                  [class.is-active]="activeSectionId === section.id"
+                  (click)="scrollToSectionFromLink($event, section.id)">
+                  {{ section.title }}
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      </aside>
+
+      <div class="detail-column">
+        <nav class="detail-nav fade-in" fadeInOnScroll aria-label="Навигация по странице">
+          <a class="back-link" [routerLink]="['/map']">К карте</a>
+        </nav>
+
+        <article class="detail-card">
+          <section class="hero" aria-labelledby="detail-title">
+            <img class="hero__image" [src]="details.heroImage" [alt]="profile.name" />
+            <div class="hero__veil" aria-hidden="true"></div>
+            <div class="hero__content">
+              <p class="hero__kicker">История личности</p>
+              <h1 id="detail-title">{{ profile.name }}</h1>
+              <p class="hero__meta">
+                {{ profile.birth }}@if (profile.death) { – {{ profile.death }} }
+                <span class="hero__divider">•</span>
+                {{ profile.region }}, {{ profile.city }}
+              </p>
+              <p class="hero__lead">{{ profile.shortInfo }}</p>
+            </div>
+          </section>
+
+          <section class="biography" aria-label="Подробная биография">
+            @for (block of renderBlocks; track trackByRenderBlock($index, block)) {
+              @switch (block.type) {
+                @case ('section') {
+                  <section
+                    #bioSection
+                    class="story-block fade-in"
+                    fadeInOnScroll
+                    [id]="block.section.id"
+                    [class.story-block--no-media]="!block.section.imageSrc"
+                    [class.story-block--media-left]="block.section.imageSrc && block.section.imageSide === 'left'"
+                    [class.story-block--media-right]="block.section.imageSrc && block.section.imageSide === 'right'">
+                    <div class="story-block__content">
+                      <h2>{{ block.section.title }}</h2>
+
+                      @if (block.section.imageSrc) {
+                        <button
+                          class="story-block__figure story-block__figure--mobile"
+                          type="button"
+                          (click)="openLightbox({ src: block.section.imageSrc, caption: block.section.imageCaption })">
+                          <img [src]="block.section.imageSrc" [alt]="block.section.title" />
+                          <span>{{ block.section.imageCaption }}</span>
+                        </button>
+                      }
+
+                      <p>{{ block.section.text }}</p>
+                    </div>
+
+                    @if (block.section.imageSrc) {
+                      <button
+                        class="story-block__figure story-block__figure--desktop"
+                        type="button"
+                        (click)="openLightbox({ src: block.section.imageSrc, caption: block.section.imageCaption })">
+                        <img [src]="block.section.imageSrc" [alt]="block.section.title" />
+                        <span>{{ block.section.imageCaption }}</span>
+                      </button>
+                    }
+                  </section>
+                }
+
+                @case ('quote') {
+                  <section class="quote-block fade-in" fadeInOnScroll>
+                    <blockquote>{{ block.quote.text }}</blockquote>
+                    @if (block.quote.author) {
+                      <p class="quote-block__author">— {{ block.quote.author }}</p>
+                    }
+                  </section>
+                }
+
+                @case ('gallery') {
+                  <section class="inline-gallery fade-in" fadeInOnScroll>
+                    @if (block.title) { <h2>{{ block.title }}</h2> }
+                    <div class="inline-gallery__grid">
+                      @for (image of block.images; track image.src) {
+                        <button class="inline-gallery__item" type="button" (click)="openLightbox(image)">
+                          <img [src]="image.src" [alt]="image.caption" />
+                          <span>{{ image.caption }}</span>
+                        </button>
+                      }
+                    </div>
+                  </section>
+                }
+              }
+            }
+          </section>
+
+          <section class="gallery fade-in" fadeInOnScroll aria-labelledby="gallery-title">
+            <div class="gallery__header">
+              <p class="gallery__eyebrow">Фотографии</p>
+              <h2 id="gallery-title">Галерея</h2>
+            </div>
+            <div class="gallery__grid">
+              @for (image of galleryItems; track image.src) {
+                <button class="gallery__item" type="button" (click)="openLightbox(image)">
+                  <img [src]="image.src" [alt]="image.caption" />
+                  <span>{{ image.caption }}</span>
+                </button>
+              }
+            </div>
+          </section>
+        </article>
       </div>
     </div>
-  </section>
-
-  <section class="summary fade-in" fadeInOnScroll>
-    <p>{{ profile.shortInfo }}</p>
-  </section>
-
-  <section class="biography">
-    <article
-      class="bio-block fade-in"
-      fadeInOnScroll
-      *ngFor="let block of details.fullBiography; trackBy: trackByBlock">
-  
-      @switch (block.type) {
-        @case ('text') {
-          <div>
-            <h2>{{ $any(block).title }}</h2>
-            <p>{{ $any(block).text }}</p>
-          </div>
-        }
-        @case ('quote') {
-          <div class="quote">
-            <blockquote>"{{ block.text }}"</blockquote>
-            <p class="quote__author" *ngIf="$any(block).author">— {{ $any(block).author }}</p>
-          </div>
-        }
-      }
-    </article>
-  </section>
-
-  <section class="carousel fade-in" fadeInOnScroll>
-    <h2>Галерея</h2>
-    <div class="carousel__track">
-      <button
-        class="carousel__item"
-        type="button"
-        *ngFor="let image of details.previewImages; trackBy: trackByImage"
-        (click)="openLightbox(image)">
-        <img [src]="image" [alt]="profile.name" />
-      </button>
-    </div>
-  </section>
-</main>
-
-<ng-template #notFound>
-  <main class="detail-page">
-    <nav class="detail-nav">
-      <a class="back-link" [routerLink]="['/map']">Назад к карте</a>
-    </nav>
+  </main>
+} @else {
+  <main class="detail-page detail-page--empty">
     <section class="not-found">
-      <h1>Ничего нет</h1>
-      <p>Проверьте ссылку или выберите метку на карте.</p>
+      <a class="back-link" [routerLink]="['/map']">К карте</a>
+      <h1>Материал не найден</h1>
+      <p>Проверьте ссылку или выберите другую героиню на карте.</p>
     </section>
   </main>
-</ng-template>
+}
 
-<div class="lightbox" *ngIf="lightboxImage" (click)="closeLightbox()">
-  <div class="lightbox__content" (click)="$event.stopPropagation()">
-    <button class="lightbox__close" type="button" (click)="closeLightbox()">×</button>
-    <img [src]="lightboxImage" [alt]="profile?.name || 'Фото'" />
+@if (showBackToTop) {
+  <button class="back-to-top" type="button" (click)="scrollToTop()" aria-label="Наверх">↑</button>
+}
+
+@if (lightboxImage) {
+  <div class="lightbox" (click)="closeLightbox()">
+    <div
+      class="lightbox__panel"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="lightboxImage.caption"
+      (click)="$event.stopPropagation()">
+      <button class="lightbox__close" type="button" (click)="closeLightbox()" aria-label="Закрыть">×</button>
+      <div class="lightbox__body">
+        <img [src]="lightboxImage.src" [alt]="lightboxImage.caption" />
+        <p>{{ lightboxImage.caption }}</p>
+      </div>
+    </div>
   </div>
-</div>
+}

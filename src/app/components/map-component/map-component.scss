@@ -193,8 +193,6 @@
 .preview__content {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  // gap: 16px;
 }
 
 .gallery {
@@ -273,8 +271,15 @@
   text-decoration: none;
   font-weight: 600;
   width: 100%;
-  margin-top: auto;
+  margin-top: 16px;
   box-sizing: border-box;
+
+  transition: transform .2s ease, background .2s ease;
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-1px);
+    background: $color-primary-dark;
+  }
 }
 
 .timeline {
@@ -293,7 +298,7 @@
 }
 
 .timeline__inner {
-  padding: 14px 20px 16px;
+  padding: 10px 16px 12px; // было 14px 20px 16px
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba($color-surface, 0.82) 0%, rgba($color-surface, 0.72) 100%),
@@ -301,23 +306,8 @@
   border: 1px solid rgba($color-primary, 0.16);
   box-shadow: 0 18px 50px rgba($color-text-main, 0.18);
   backdrop-filter: blur(14px);
-  overflow: visible; // важно — иначе метка над ползунком обрежется
+  overflow: visible; 
   position: relative;
-}
-
-.timeline__inner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 18px;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba($color-primary-dark, 0.06) 0px,
-    rgba($color-primary-dark, 0.06) 1px,
-    transparent 1px,
-    transparent 34px
-  );
-  pointer-events: none;
 }
 
 .timeline__head {
@@ -330,19 +320,19 @@
 }
 
 .timeline__title {
-  font-size: 12px;
-  letter-spacing: 0.16em;
+  font-size: 11px; // было 12px
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba($color-primary-dark, 0.9);
   font-weight: 800;
 }
 
 .timeline__all-btn {
-  font-size: 11px;
+  font-size: 10px; // было 11px
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 4px 14px;
+  padding: 3px 12px; // было 4px 14px
   border-radius: 999px;
   border: 1.5px solid rgba($color-primary, 0.35);
   background: transparent;
@@ -363,8 +353,8 @@
 }
 
 .timeline__slider-wrap {
-  margin-top: 28px;
-  padding-bottom: 4px;
+  margin-top: 20px; // было 28px
+  padding-bottom: 2px; // было 4px
   position: relative;
   z-index: 1;
 
@@ -395,7 +385,7 @@
 .timeline__slider {
   width: 100%;
   appearance: none;
-  height: 8px;
+  height: 6px; // было 8px
   border-radius: 999px;
   background: linear-gradient(
     90deg,
@@ -413,8 +403,8 @@
 
   &::-webkit-slider-thumb {
     appearance: none;
-    width: 22px;
-    height: 22px;
+    width: 18px; // было 22px
+    height: 18px; // было 22px
     border-radius: 999px;
     background: $color-surface;
     border: 2px solid rgba($color-primary-dark, 0.55);
@@ -429,8 +419,8 @@
   }
 
   &::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
+    width: 18px; // было 22px
+    height: 18px; // было 22px
     border-radius: 999px;
     background: $color-surface;
     border: 2px solid rgba($color-primary-dark, 0.55);
@@ -441,8 +431,8 @@
 
 .timeline__ticks {
   position: relative;
-  height: 20px;
-  margin-top: 8px;
+  height: 16px; // было 20px
+  margin-top: 6px; // было 8px
 }
 
 .timeline__tick {

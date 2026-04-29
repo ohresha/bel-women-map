@@ -31,6 +31,8 @@ export type BiographyBlock =
       type: 'text';
       title: string;
       text: string;
+      image?: string | null;
+      imageSide?: 'left' | 'right' | null;
     }
   | {
       type: 'quote';
@@ -134,4 +136,3 @@ export class MapDataService {
     return ['XIX век', 'XX век', 'XXI век'];
   }
 }
-
