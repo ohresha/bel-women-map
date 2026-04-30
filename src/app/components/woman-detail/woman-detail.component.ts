@@ -1,4 +1,4 @@
-import { DOCUMENT, NgClass, NgFor, NgIf } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -46,7 +46,7 @@ type RenderBlock =
 
 @Component({
   selector: 'app-woman-detail',
-  imports: [NgIf, NgFor, NgClass, RouterLink, FadeInOnScrollDirective],
+  imports: [RouterLink, FadeInOnScrollDirective],
   templateUrl: './woman-detail.component.html',
   styleUrl: './woman-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

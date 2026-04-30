@@ -1,7 +1,42 @@
 <main class="login">
   <section class="card">
-    <h1>Вход для администратора</h1>
-    <p>Раздел авторизации будет добавлен позже.</p>
-    <a class="back" routerLink="/">Вернуться на главную</a>
+    <div class="card__ornament" aria-hidden="true"></div>
+    <p class="card__kicker">Служебный вход</p>
+    <h1>Панель администратора</h1>
+    <p class="card__lead">
+      Войдите с учетной записью администратора Firebase, чтобы управлять биографиями, метками и содержимым карты.
+    </p>
+
+    @if (authError) {
+      <div class="alert" role="alert">
+        {{ authError }}
+      </div>
+    }
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="field">
+        <span>Email</span>
+        <input type="email" formControlName="email" placeholder="admin@example.com" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <small>Укажите корректный email администратора.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Пароль</span>
+        <input type="password" formControlName="password" placeholder="Введите пароль" />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <small>Пароль должен содержать не менее 6 символов.</small>
+        }
+      </label>
+
+      <button class="submit" type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Выполняется вход...' : 'Войти в админ-панель' }}
+      </button>
+    </form>
+
+    <div class="card__footer">
+      <a class="back" routerLink="/">Вернуться на главную</a>
+    </div>
   </section>
 </main>

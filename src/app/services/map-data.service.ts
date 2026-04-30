@@ -1,52 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
+import { catchError, map, Observable, of, switchMap } from 'rxjs';
 import { OnlineDataService } from './online-data.service';
-
-// короткая информация для метки
-export interface WomanProfile {
-  id: string;
-  name: string;
-  birth?: number;
-  death?: number;
-  region: string;
-  city: string;
-  categories: string[];
-  century: string;
-  shortInfo: string;
-  coordinates: [number, number];
-  images: string[];
-}
-
-// части для полной информации
-export interface WomanDetails {
-  id: string;
-  heroImage: string;
-  previewImages: string[];
-  fullBiography: BiographyBlock[];
-}
-// блоки текста и фото для полной информации
-export type BiographyBlock =
-  | {
-      type: 'text';
-      title: string;
-      text: string;
-      image?: string | null;
-      imageSide?: 'left' | 'right' | null;
-    }
-  | {
-      type: 'quote';
-      text: string;
-      author?: string;
-    }
-  | {
-      type: 'image-gallery';
-      title?: string;
-      images: Array<{
-        src: string;
-        caption?: string;
-      }>;
-    };
+import { BiographyBlock, WomanDetails, WomanProfile, WomanRecord } from '../models/woman-record.model';
+export type { BiographyBlock, WomanDetails, WomanProfile, WomanRecord } from '../models/woman-record.model';
 
 // фильтры
 export interface MapFilters {
@@ -64,25 +21,30 @@ interface DataStructure {
   providedIn: 'root'
 })
 export class MapDataService {
-  private onlineService = inject(OnlineDataService);
-
+  private onlineDataService = inject(OnlineDataService);
   private http = inject(HttpClient);
   private readonly jsonPath = 'assets/data/women-data.json';
 
-  // Получить всё содержимое файла
-  private getData(): Observable<DataStructure> {
+  private getLocalData(): Observable<DataStructure> {
     return this.http.get<DataStructure>(this.jsonPath);
+  }
+
+  getLocalWomenRecords(): Observable<WomanRecord[]> {
+    return this.getLocalData().pipe(map((data) => this.mergeLocalData(data)));
+  }
+
+  getAllWomenRecords(): Observable<WomanRecord[]> {
+    return this.onlineDataService.getData().pipe(
+      map((data) => this.mergeLocalData(data as DataStructure)),
+      switchMap((records) => records.length > 0 ? of(records) : this.getLocalWomenRecords()),
+      catchError(() => this.getLocalWomenRecords())
+    );
   }
 
   // Получить только список профилей
   getAllProfiles(): Observable<WomanProfile[]>{
-    return this.getData().pipe(map(d => d.profiles));
+    return this.getAllWomenRecords().pipe(map((records) => records.map((record) => this.toProfile(record))));
   }
-
-  // ОНЛАЙН ВЕРСИЯ
-  // getAllProfiles(): Observable<WomanProfile[]>{
-  //   return this.onlineService.getData().pipe(map(d => d.profiles));
-  // }
 
   getProfileById(id: string): Observable<WomanProfile | undefined> {
     return this.getAllProfiles().pipe(
@@ -91,8 +53,9 @@ export class MapDataService {
   }
 
   getDetailsById(id: string): Observable<WomanDetails | undefined> {
-    return this.getData().pipe(
-      map(d => d.details.find(detail => detail.id === id))
+    return this.getAllWomenRecords().pipe(
+      map((records) => records.find((record) => record.id === id)),
+      map((record) => record ? this.toDetails(record) : undefined)
     );
   }
 
@@ -133,6 +96,43 @@ export class MapDataService {
   }
 
   getCenturies(): string[] {
-    return ['XIX век', 'XX век', 'XXI век'];
+    return ['XII век', 'XVIII век', 'XIX век', 'XX век', 'XXI век'];
+  }
+
+  private mergeLocalData(data: DataStructure): WomanRecord[] {
+    return data.profiles.map((profile) => {
+      const details = data.details.find((item) => item.id === profile.id);
+      return {
+        ...profile,
+        heroImage: details?.heroImage || profile.images[0] || 'assets/stockWoman.webp',
+        previewImages: details?.previewImages || profile.images,
+        fullBiography: details?.fullBiography || []
+      };
+    });
+  }
+
+  private toProfile(record: WomanRecord): WomanProfile {
+    return {
+      id: record.id,
+      name: record.name,
+      birth: record.birth,
+      death: record.death,
+      region: record.region,
+      city: record.city,
+      categories: record.categories,
+      century: record.century,
+      shortInfo: record.shortInfo,
+      coordinates: record.coordinates,
+      images: record.images
+    };
+  }
+
+  private toDetails(record: WomanRecord): WomanDetails {
+    return {
+      id: record.id,
+      heroImage: record.heroImage,
+      previewImages: record.previewImages,
+      fullBiography: record.fullBiography as BiographyBlock[]
+    };
   }
 }

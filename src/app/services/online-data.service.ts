@@ -1,17 +1,18 @@
-import { Injectable } from '@angular/core';
+import { EnvironmentInjector, Injectable, inject, runInInjectionContext } from '@angular/core';
 import { Database, objectVal, ref } from '@angular/fire/database';
-import { Observable } from 'rxjs';
+import { defer, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class OnlineDataService {
-  constructor(private db: Database){
+  private readonly injector = inject(EnvironmentInjector);
 
-  }
+  constructor(private db: Database){}
 
   getData(): Observable<any>{
-    const dataRef = ref(this.db, '/');
-    return objectVal(dataRef);
+    return defer(() =>
+      runInInjectionContext(this.injector, () => objectVal(ref(this.db, '/')))
+    );
   }
 }
