@@ -3,16 +3,19 @@ import { Auth, authState, signInWithEmailAndPassword, signOut, User } from '@ang
 import {
   Database,
   get,
-  objectVal,
   ref,
-  remove,
-  set,
+  set
 } from '@angular/fire/database';
-import { catchError, defer, map, Observable, throwError } from 'rxjs';
+import { defer, map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { BiographyBlock, WomanDetails, WomanProfile, WomanRecord } from '../models/woman-record.model';
 
-interface DataStructure {
+interface WomenDataSnapshot {
+  profiles?: unknown;
+  details?: unknown;
+}
+
+export interface WomenDataPayload {
   profiles: WomanProfile[];
   details: WomanDetails[];
 }
@@ -49,260 +52,119 @@ export class FirebaseService {
     return runInInjectionContext(this.injector, () => signOut(this.auth));
   }
 
-  observeWomen(): Observable<WomanRecord[]> {
-    return defer(() =>
-      runInInjectionContext(this.injector, () => objectVal(ref(this.database)))
-    ).pipe(
-      map((data) => this.normalizeDataStructure(data)),
-      map((data) => this.mergeData(data)),
-      map((items) => items.sort((a, b) => a.name.localeCompare(b.name, 'ru'))),
-      map((items) => items.map((item) => this.cloneRecord(item))),
-      catchError((error) => {
-        console.error('Ошибка при чтении данных из Firebase:', error);
-        return throwError(() => error);
-      })
-    );
-  }
+  async getWomenData(): Promise<WomenDataPayload> {
+    const snapshot = await runInInjectionContext(this.injector, () => get(ref(this.database, '/')));
+    const data = (snapshot.val() ?? {}) as WomenDataSnapshot;
 
-  async saveWoman(record: WomanRecord): Promise<void> {
-    try {
-      const normalizedRecord = this.normalizeWomanRecord(record);
-      const safeId = this.assertValidRecordId(normalizedRecord.id);
-
-      const profile: WomanProfile = {
-        id: normalizedRecord.id,
-        name: normalizedRecord.name,
-        birth: normalizedRecord.birth,
-        death: normalizedRecord.death,
-        region: normalizedRecord.region,
-        city: normalizedRecord.city,
-        categories: normalizedRecord.categories,
-        century: normalizedRecord.century,
-        shortInfo: normalizedRecord.shortInfo,
-        coordinates: normalizedRecord.coordinates,
-        images: normalizedRecord.images
-      };
-
-      const details: WomanDetails = {
-        id: normalizedRecord.id,
-        heroImage: normalizedRecord.heroImage,
-        previewImages: normalizedRecord.previewImages,
-        fullBiography: normalizedRecord.fullBiography
-      };
-
-      await runInInjectionContext(this.injector, async () => {
-        await Promise.all([
-          set(ref(this.database, `profiles/${safeId}`), this.toPlainData(profile)),
-          set(ref(this.database, `details/${safeId}`), this.toPlainData(details))
-        ]);
-      });
-    } catch (error) {
-      console.error('Ошибка при сохранении записи в Firebase:', error);
-      throw error;
-    }
-  }
-
-  async deleteWoman(id: string): Promise<void> {
-    try {
-      const safeId = this.assertValidRecordId(id);
-      await runInInjectionContext(this.injector, async () => {
-        await Promise.all([
-          remove(ref(this.database, `profiles/${safeId}`)),
-          remove(ref(this.database, `details/${safeId}`))
-        ]);
-      });
-    } catch (error) {
-      console.error(`Ошибка при удалении записи "${id}" из Firebase:`, error);
-      throw error;
-    }
-  }
-
-  async hasWomen(): Promise<boolean> {
-    try {
-      const snapshot = await runInInjectionContext(this.injector, () => get(ref(this.database, 'profiles')));
-      const value = snapshot.val();
-      return snapshot.exists() && (
-        Array.isArray(value)
-          ? value.length > 0
-          : !!value && typeof value === 'object' && Object.keys(value).length > 0
-      );
-    } catch (error) {
-      console.error('Ошибка при проверке наличия записей в Firebase:', error);
-      throw error;
-    }
-  }
-
-  async seedWomen(records: WomanRecord[]): Promise<void> {
-    try {
-      const sanitizedRecords = records.map((record) => this.normalizeWomanRecord(record));
-      await runInInjectionContext(this.injector, () =>
-        set(ref(this.database), this.toPlainData(this.splitRecords(sanitizedRecords)))
-      );
-    } catch (error) {
-      console.error('Ошибка при первичной загрузке записей в Firebase:', error);
-      throw error;
-    }
-  }
-
-  private normalizeDataStructure(data: unknown): DataStructure {
-    const value = (data ?? {}) as Partial<DataStructure>;
     return {
-      profiles: this.normalizeCollection<WomanProfile>(value.profiles),
-      details: this.normalizeCollection<WomanDetails>(value.details)
+      profiles: this.normalizeArray<WomanProfile>(data.profiles),
+      details: this.normalizeArray<WomanDetails>(data.details)
     };
   }
 
-  private mergeData(data: DataStructure): WomanRecord[] {
-    return data.profiles.map((profile) => {
-      const details = data.details.find((item) => item.id === profile.id);
-      return this.cloneRecord({
-        ...profile,
-        heroImage: details?.heroImage || profile.images?.[0] || 'assets/stockWoman.webp',
-        previewImages: details?.previewImages || profile.images || [],
-        fullBiography: details?.fullBiography || []
-      });
-    });
+  async saveWomanRecord(record: WomanRecord): Promise<void> {
+    const data = await this.getWomenData();
+    const profile = this.toProfile(record);
+    const details = this.toDetails(record);
+
+    let profileIndex = data.profiles.findIndex((item) => item.id === record.id);
+    let detailsIndex = data.details.findIndex((item) => item.id === record.id);
+
+    if (profileIndex === -1) {
+      profileIndex = data.profiles.length;
+    }
+
+    if (detailsIndex === -1) {
+      detailsIndex = data.details.length;
+    }
+
+    await Promise.all([
+      runInInjectionContext(this.injector, () => set(ref(this.database, `/profiles/${profileIndex}`), profile)),
+      runInInjectionContext(this.injector, () => set(ref(this.database, `/details/${detailsIndex}`), details))
+    ]);
   }
 
-  private splitRecords(records: WomanRecord[]): DataStructure {
-    return {
-      profiles: records.map((record) => ({
-        id: this.assertValidRecordId(record.id),
-        name: record.name,
-        birth: record.birth,
-        death: record.death,
-        region: record.region,
-        city: record.city,
-        categories: [...record.categories],
-        century: record.century,
-        shortInfo: record.shortInfo,
-        coordinates: [...record.coordinates] as [number, number],
-        images: [...record.images]
-      })),
-      details: records.map((record) => ({
-        id: this.assertValidRecordId(record.id),
-        heroImage: record.heroImage,
-        previewImages: [...record.previewImages],
-        fullBiography: record.fullBiography.map((block) => this.cloneBiographyBlock(block))
-      }))
-    };
-  }
-
-  private normalizeCollection<T>(value: unknown): T[] {
+  private normalizeArray<T>(value: unknown): T[] {
     if (Array.isArray(value)) {
-      return value.filter(Boolean) as T[];
+      return value.filter((item): item is T => !!item && typeof item === 'object');
     }
 
     if (value && typeof value === 'object') {
-      return Object.values(value as Record<string, T>).filter(Boolean);
+      return Object.values(value as Record<string, T>).filter(
+        (item): item is T => !!item && typeof item === 'object'
+      );
     }
 
     return [];
   }
 
-  private normalizeWomanRecord(record: WomanRecord): WomanRecord {
-    const normalizedRecord: WomanRecord = {
-      ...record,
-      id: this.assertValidRecordId(record.id),
-      name: record.name.trim(),
-      birth: typeof record.birth === 'number' ? record.birth : undefined,
-      death: typeof record.death === 'number' ? record.death : undefined,
-      region: record.region.trim(),
-      city: record.city.trim(),
-      century: record.century.trim(),
-      shortInfo: record.shortInfo.trim(),
-      coordinates: this.normalizeCoordinates(record.coordinates),
-      categories: record.categories.map((item) => item.trim()).filter(Boolean),
-      images: record.images.map((item) => item.trim()).filter(Boolean),
-      previewImages: record.previewImages.map((item) => item.trim()).filter(Boolean),
-      heroImage: record.heroImage.trim(),
+  private toProfile(record: WomanRecord): WomanProfile {
+    return {
+      id: record.id,
+      name: record.name,
+      birth: record.birth,
+      death: record.death,
+      region: record.region,
+      city: record.city,
+      categories: record.categories,
+      century: record.century,
+      shortInfo: record.shortInfo,
+      coordinates: record.coordinates,
+      images: record.images
+    };
+  }
+
+  private toDetails(record: WomanRecord): WomanDetails {
+    return {
+      id: record.id,
+      heroImage: record.heroImage,
+      previewImages: record.previewImages,
       fullBiography: record.fullBiography.map((block) => this.normalizeBiographyBlock(block))
     };
-
-    return this.toPlainData(normalizedRecord);
   }
 
   private normalizeBiographyBlock(block: BiographyBlock): BiographyBlock {
-    if (block.type === 'text') {
-      return {
-        type: 'text',
-        title: block.title.trim(),
-        text: block.text.trim(),
-        image: block.image?.trim() || '',
-        imageSide: block.imageSide === 'left' || block.imageSide === 'right' ? block.imageSide : 'right'
-      };
-    }
-
     if (block.type === 'quote') {
-      return {
+      const normalizedQuote: BiographyBlock = {
         type: 'quote',
-        text: block.text.trim(),
-        author: block.author?.trim() || ''
+        text: block.text.trim()
       };
+
+      if (block.author?.trim()) {
+        normalizedQuote.author = block.author.trim();
+      }
+
+      return normalizedQuote;
     }
 
-    return {
-      type: 'image-gallery',
-      title: block.title?.trim() || '',
-      images: block.images
-        .map((image) => ({
-          src: image.src.trim(),
-          caption: image.caption?.trim() || ''
-        }))
-        .filter((image) => !!image.src)
-    };
-  }
-
-  private normalizeCoordinates(coordinates: WomanRecord['coordinates']): [number, number] {
-    const latitude = Number(coordinates?.[0]);
-    const longitude = Number(coordinates?.[1]);
-
-    return [
-      Number.isFinite(latitude) ? latitude : 53.9,
-      Number.isFinite(longitude) ? longitude : 27.5667
-    ];
-  }
-
-  private assertValidRecordId(id: unknown): string {
-    if (typeof id !== 'string') {
-      throw new Error('Не удалось выполнить операцию: ID записи должен быть строкой.');
-    }
-
-    const normalizedId = id.trim();
-    if (!normalizedId) {
-      throw new Error('Не удалось выполнить операцию: ID записи не должен быть пустым.');
-    }
-
-    if (/[.#$/\[\]]/.test(normalizedId)) {
-      throw new Error('Не удалось выполнить операцию: ID записи содержит недопустимые символы для Firebase.');
-    }
-
-    return normalizedId;
-  }
-
-  private toPlainData<T>(data: T): T {
-    return JSON.parse(JSON.stringify(data)) as T;
-  }
-
-  private cloneRecord(record: WomanRecord): WomanRecord {
-    return {
-      ...record,
-      coordinates: [...record.coordinates] as [number, number],
-      categories: [...record.categories],
-      images: [...record.images],
-      previewImages: [...record.previewImages],
-      fullBiography: record.fullBiography.map((block) => this.cloneBiographyBlock(block))
-    };
-  }
-
-  private cloneBiographyBlock(block: BiographyBlock): BiographyBlock {
     if (block.type === 'image-gallery') {
-      return {
-        ...block,
-        images: block.images.map((image) => ({ ...image }))
+      const normalizedGallery: BiographyBlock = {
+        type: 'image-gallery',
+        images: (block.images ?? []).filter((image) => image?.src?.trim()).map((image) => ({
+          src: image.src.trim(),
+          caption: image.caption?.trim() ?? ''
+        }))
       };
+
+      if (block.title?.trim()) {
+        normalizedGallery.title = block.title.trim();
+      }
+
+      return normalizedGallery;
     }
 
-    return { ...block };
+    const normalizedText: BiographyBlock = {
+      type: 'text',
+      title: block.title.trim(),
+      text: block.text.trim(),
+      image: block.image?.trim() ?? ''
+    };
+
+    if (block.imageSide === 'left' || block.imageSide === 'right') {
+      normalizedText.imageSide = block.imageSide;
+    }
+
+    return normalizedText;
   }
+
 }

@@ -1,30 +1,8 @@
-export type BiographyBlock =
-  | {
-      type: 'text';
-      title: string;
-      text: string;
-      image?: string | null;
-      imageSide?: 'left' | 'right' | null;
-    }
-  | {
-      type: 'quote';
-      text: string;
-      author?: string;
-    }
-  | {
-      type: 'image-gallery';
-      title?: string;
-      images: Array<{
-        src: string;
-        caption?: string;
-      }>;
-    };
-
 export interface WomanProfile {
   id: string;
   name: string;
-  birth?: number;
-  death?: number;
+  birth: number;
+  death: number;
   region: string;
   city: string;
   categories: string[];
@@ -34,6 +12,34 @@ export interface WomanProfile {
   images: string[];
 }
 
+export type BiographyTextBlock = {
+  type: 'text';
+  title: string;
+  text: string;
+  image?: string;
+  imageSide?: 'left' | 'right';
+};
+
+export type BiographyQuoteBlock = {
+  type: 'quote';
+  text: string;
+  author?: string;
+};
+
+export type BiographyGalleryBlock = {
+  type: 'image-gallery';
+  title?: string;
+  images: Array<{
+    src: string;
+    caption: string;
+  }>;
+};
+
+export type BiographyBlock =
+  | BiographyTextBlock
+  | BiographyQuoteBlock
+  | BiographyGalleryBlock;
+
 export interface WomanDetails {
   id: string;
   heroImage: string;
@@ -41,4 +47,8 @@ export interface WomanDetails {
   fullBiography: BiographyBlock[];
 }
 
-export interface WomanRecord extends WomanProfile, Omit<WomanDetails, 'id'> {}
+export interface WomanRecord extends WomanProfile {
+  heroImage: string;
+  previewImages: string[];
+  fullBiography: BiographyBlock[];
+}

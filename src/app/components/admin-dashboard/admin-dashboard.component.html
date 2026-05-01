@@ -1,85 +1,121 @@
 <main class="admin-page">
-  <div class="admin-shell">
+  <div class="ornament ornament--left"></div>
+  <div class="ornament ornament--right"></div>
+
+  <section class="dashboard-shell">
     <header class="hero">
       <div class="hero__copy">
-        <p class="hero__kicker">Управление контентом</p>
-        <h1>Административная панель</h1>
+        <p class="hero__eyebrow">Панель администратора</p>
+        <h1>Редактирование женщин проекта</h1>
         <p class="hero__lead">
-          Редактируйте биографии, координаты, карточки и фотографии прямо в Realtime Database. Публичная карта будет использовать эти записи автоматически.
+          Выберите запись слева, объедините данные из <strong>/profiles</strong> и <strong>/details</strong>
+          в одной форме и сохраните изменения обратно в Firebase Realtime Database.
         </p>
       </div>
 
-      <div class="hero__stats">
-        <article class="stat">
-          <span class="stat__label">Записей</span>
-          <strong>{{ summary().total }}</strong>
-        </article>
+      <div class="hero__meta">
+        <div class="hero-card">
+          <span>Всего записей</span>
+          <strong>{{ records().length }}</strong>
+        </div>
+
+        <div class="hero-card" *ngIf="user$ | async as user">
+          <span>Текущий администратор</span>
+          <strong>{{ user.email }}</strong>
+        </div>
       </div>
 
       <div class="hero__actions">
-        <div class="hero__user" *ngIf="user$ | async as user">
-          <span>Вы вошли как</span>
-          <strong>{{ user.email }}</strong>
-        </div>
-        <button class="btn btn--ghost" type="button" (click)="logout()">Выход</button>
+        <a class="btn btn--soft" routerLink="/">На главную</a>
+        <button class="btn btn--soft" type="button" (click)="startCreateRecord()">Новая запись</button>
+        <button class="btn btn--ghost" type="button" (click)="logout()">Выйти</button>
       </div>
     </header>
 
-    @if (feedbackMessage()) {
-      <section class="feedback" [class.feedback--error]="feedbackType() === 'error'">
-        {{ feedbackMessage() }}
-      </section>
-    }
+    <section
+      class="feedback"
+      *ngIf="feedbackMessage()"
+      [class.feedback--error]="feedbackType() === 'error'">
+      {{ feedbackMessage() }}
+    </section>
 
-    <section class="dashboard">
-      <aside class="catalog">
-        <div class="panel-heading">
+    <div class="mobile-picker">
+      <label class="field">
+        <span>Быстрый выбор записи</span>
+        <select
+          [value]="selectedId() ?? ''"
+          (change)="selectRecord(($any($event.target).value))">
+          <option value="" disabled>Выберите женщину</option>
+          <option *ngFor="let record of records(); trackBy: trackByRecord" [value]="record.id">
+            {{ record.name }}
+          </option>
+        </select>
+      </label>
+
+      <button class="btn btn--soft" type="button" (click)="toggleMobileList()">
+        {{ isMobileListOpen() ? 'Скрыть список' : 'Показать список' }}
+      </button>
+    </div>
+
+    <div class="dashboard-grid">
+      <aside class="sidebar" [class.sidebar--open]="isMobileListOpen()">
+        <div class="panel-head">
           <div>
-            <p class="panel-heading__kicker">Список меток</p>
-            <h2>База Realtime Database</h2>
+            <p class="panel-head__eyebrow">Левая панель</p>
+            <h2>Список женщин</h2>
           </div>
-          <button class="btn" type="button" (click)="createNewRecord()">Добавить новую запись</button>
         </div>
 
-        <div class="catalog__actions">
-          <a class="btn btn--soft" routerLink="/">На главную</a>
+        <div class="sidebar__list" *ngIf="records().length; else emptyList">
+          <button
+            *ngFor="let record of records(); trackBy: trackByRecord"
+            type="button"
+            class="record-card"
+            [class.record-card--active]="selectedId() === record.id && !isCreating()"
+            (click)="selectRecord(record.id)">
+            <strong>{{ record.name }}</strong>
+            <span>{{ record.region }} • {{ record.city }}</span>
+            <small>{{ record.century }}</small>
+          </button>
         </div>
 
-        <div class="catalog__list">
-          @for (record of records(); track record.id) {
-            <button
-              class="entry"
-              type="button"
-              [class.entry--active]="selectedId() === record.id"
-              (click)="editRecord(record)">
-              <span class="entry__title">{{ record.name }}</span>
-              <span class="entry__meta">{{ record.region }} • {{ record.century }}</span>
-            </button>
-          } @empty {
-            <div class="empty-state">
-              <h3>База пока пуста</h3>
-              <p>Загрузите записи из локального JSON или создайте первую карточку вручную.</p>
-            </div>
-          }
-        </div>
+        <ng-template #emptyList>
+          <div class="empty-state">
+            <h3>Записей пока нет</h3>
+            <p>Создайте первую запись и сохраните её в базу.</p>
+          </div>
+        </ng-template>
       </aside>
 
       <section class="editor">
-        <div class="panel-heading">
+        <div class="panel-head">
           <div>
-            <p class="panel-heading__kicker">Редактор записи</p>
-            <h2>{{ selectedId() ? 'Изменение записи' : 'Новая запись' }}</h2>
+            <p class="panel-head__eyebrow">Правая панель</p>
+            <h2>{{ isCreating() ? 'Новая запись' : 'Редактирование записи' }}</h2>
           </div>
-          <button class="btn btn--danger" type="button" (click)="deleteCurrent()">Удалить</button>
+
+          <div class="editor__status">
+            <span *ngIf="isLoading()">Загрузка данных...</span>
+            <span *ngIf="!isLoading() && selectedRecord() as current">Выбрана: {{ current.name }}</span>
+            <span *ngIf="!isLoading() && isCreating()">Режим создания новой записи</span>
+          </div>
         </div>
 
-        <form class="form" [formGroup]="form" (ngSubmit)="save()">
+        <form class="editor-form" [formGroup]="form" (ngSubmit)="save()" [attr.data-form-render-key]="formRenderKey()">
           <section class="card">
-            <h3>Основные сведения</h3>
+            <div class="section-title">
+              <h3>Основные поля профиля</h3>
+              <p>Данные сохраняются в узел <strong>/profiles</strong>.</p>
+            </div>
+
             <div class="grid grid--two">
               <label class="field">
-                <span>ID документа</span>
-                <input type="text" formControlName="id" placeholder="Евфросиния_Полоцкая" />
+                <span>ID записи</span>
+                <input
+                  type="text"
+                  formControlName="id"
+                  [readonly]="!isCreating()"
+                  placeholder="Евфросиния_Полоцкая" />
               </label>
 
               <label class="field">
@@ -103,181 +139,156 @@
               </label>
 
               <label class="field">
-                <span>Город / место</span>
+                <span>Город</span>
                 <input type="text" formControlName="city" />
               </label>
 
               <label class="field">
                 <span>Век</span>
-                <input type="text" formControlName="century" placeholder="XII век" />
+                <input type="text" formControlName="century" placeholder="XIX век" />
               </label>
 
-              <label class="field">
-                <span>Главное изображение</span>
-                <input type="text" formControlName="heroImage" />
-              </label>
-
-              <label class="field">
-                <span>Широта</span>
-                <input type="number" step="0.0001" formControlName="latitude" />
-              </label>
-
-              <label class="field">
-                <span>Долгота</span>
-                <input type="number" step="0.0001" formControlName="longitude" />
+              <label class="field field--full">
+                <span>Краткое описание</span>
+                <textarea rows="4" formControlName="shortInfo"></textarea>
               </label>
             </div>
-
-            <label class="field">
-              <span>Краткое описание</span>
-              <textarea rows="4" formControlName="shortInfo"></textarea>
-            </label>
           </section>
 
           <section class="card">
-            <div class="section-head">
-              <h3>Категории</h3>
-              <button class="btn btn--soft" type="button" (click)="addCategory()">Добавить категорию</button>
+            <div class="section-title">
+              <h3>Координаты и категории</h3>
+              <p>Координаты сохраняются как массив из двух чисел.</p>
             </div>
 
-            <div class="stack" formArrayName="categories">
-              @for (control of categoriesArray.controls; track $index) {
-                <div class="inline-field">
-                  <input [formControlName]="$index" type="text" placeholder="Искусство" />
-                  <button class="icon-btn" type="button" (click)="removeCategory($index)">×</button>
+            <div class="grid grid--two">
+              <div class="field" formArrayName="coordinates">
+                <span>Координаты</span>
+                <div class="inline-grid inline-grid--two">
+                  <input type="number" step="0.0001" [formControlName]="0" placeholder="Широта" />
+                  <input type="number" step="0.0001" [formControlName]="1" placeholder="Долгота" />
                 </div>
-              }
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="section-head">
-              <h3>Изображения карточки</h3>
-              <button class="btn btn--soft" type="button" (click)="addImage()">Добавить ссылку</button>
-            </div>
-
-            <div class="stack" formArrayName="images">
-              @for (control of imagesArray.controls; track $index) {
-                <div class="inline-field">
-                  <input [formControlName]="$index" type="text" placeholder="assets/stockWoman.webp" />
-                  <button class="icon-btn" type="button" (click)="removeImage($index)">×</button>
-                </div>
-              }
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="section-head">
-              <h3>Превью-галерея</h3>
-              <button class="btn btn--soft" type="button" (click)="addPreviewImage()">Добавить ссылку</button>
-            </div>
-
-            <div class="stack" formArrayName="previewImages">
-              @for (control of previewImagesArray.controls; track $index) {
-                <div class="inline-field">
-                  <input [formControlName]="$index" type="text" placeholder="assets/stockWoman.webp" />
-                  <button class="icon-btn" type="button" (click)="removePreviewImage($index)">×</button>
-                </div>
-              }
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="section-head">
-              <h3>Полная биография</h3>
-              <div class="section-head__actions">
-                <button class="btn btn--soft" type="button" (click)="addBiographyBlock('text')">Текст</button>
-                <button class="btn btn--soft" type="button" (click)="addBiographyBlock('quote')">Цитата</button>
-                <button class="btn btn--soft" type="button" (click)="addBiographyBlock('image-gallery')">Галерея</button>
               </div>
             </div>
 
-            <div class="bio-stack" formArrayName="fullBiography">
-              @for (block of biographyArray.controls; track $index; let blockIndex = $index) {
-                <div class="bio-card" [formGroupName]="blockIndex">
-                  <div class="bio-card__head">
-                    <div>
-                      <span class="bio-card__type">{{ biographyTypeAt(blockIndex) }}</span>
-                    </div>
-                    <button class="icon-btn" type="button" (click)="removeBiographyBlock(blockIndex)">×</button>
-                  </div>
+            <div class="array-section">
+              <div class="array-section__head">
+                <h4>Категории</h4>
+                <button class="btn btn--soft" type="button" (click)="addCategory()">Добавить категорию</button>
+              </div>
 
-                  @if (biographyTypeAt(blockIndex) === 'text') {
-                    <div class="grid">
-                      <label class="field">
-                        <span>Заголовок</span>
-                        <input type="text" formControlName="title" />
-                      </label>
-
-                      <label class="field">
-                        <span>Сторона изображения</span>
-                        <select formControlName="imageSide">
-                          <option value="left">Слева</option>
-                          <option value="right">Справа</option>
-                        </select>
-                      </label>
-
-                      <label class="field field--full">
-                        <span>Текст</span>
-                        <textarea rows="6" formControlName="text"></textarea>
-                      </label>
-
-                      <label class="field field--full">
-                        <span>Ссылка на изображение</span>
-                        <input type="text" formControlName="image" />
-                      </label>
-                    </div>
-                  }
-
-                  @if (biographyTypeAt(blockIndex) === 'quote') {
-                    <div class="grid">
-                      <label class="field field--full">
-                        <span>Текст цитаты</span>
-                        <textarea rows="4" formControlName="text"></textarea>
-                      </label>
-
-                      <label class="field">
-                        <span>Автор</span>
-                        <input type="text" formControlName="author" />
-                      </label>
-                    </div>
-                  }
-
-                  @if (biographyTypeAt(blockIndex) === 'image-gallery') {
-                    <div class="grid">
-                      <label class="field field--full">
-                        <span>Заголовок галереи</span>
-                        <input type="text" formControlName="title" />
-                      </label>
-
-                      <div class="gallery-editor" formArrayName="images">
-                        @for (image of galleryImagesControls(blockIndex); track $index; let imageIndex = $index) {
-                          <div class="gallery-editor__row" [formGroupName]="imageIndex">
-                            <input type="text" formControlName="src" placeholder="Ссылка на изображение" />
-                            <input type="text" formControlName="caption" placeholder="Подпись" />
-                            <button class="icon-btn" type="button" (click)="removeGalleryImage(blockIndex, imageIndex)">×</button>
-                          </div>
-                        }
-                      </div>
-
-                      <button class="btn btn--soft" type="button" (click)="addGalleryImage(blockIndex)">
-                        Добавить изображение в галерею
-                      </button>
-                    </div>
-                  }
+              <div class="array-list" formArrayName="categories">
+                <div class="array-row" *ngFor="let control of categoriesArray.controls; let i = index; trackBy: trackByControl">
+                  <input [formControlName]="i" type="text" placeholder="Просвещение" />
+                  <button class="icon-btn" type="button" (click)="removeCategory(i)">×</button>
                 </div>
-              }
+              </div>
             </div>
           </section>
 
+          <section class="card">
+            <div class="section-title">
+              <h3>Изображения профиля и детали</h3>
+              <p>Поля ниже покрывают и карточку на карте, и детальную страницу.</p>
+            </div>
+
+            <div class="grid">
+              <label class="field">
+                <span>Hero-image</span>
+                <input type="text" formControlName="heroImage" placeholder="assets/stockWoman.webp" />
+              </label>
+            </div>
+
+            <div class="array-section">
+              <div class="array-section__head">
+                <h4>Изображения профиля</h4>
+                <button class="btn btn--soft" type="button" (click)="addImage()">Добавить ссылку</button>
+              </div>
+
+              <div class="array-list" formArrayName="images">
+                <div class="array-row" *ngFor="let control of imagesArray.controls; let i = index; trackBy: trackByControl">
+                  <input [formControlName]="i" type="text" placeholder="assets/stockWoman.webp" />
+                  <button class="icon-btn" type="button" (click)="removeImage(i)">×</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="array-section">
+              <div class="array-section__head">
+                <h4>Preview images</h4>
+                <button class="btn btn--soft" type="button" (click)="addPreviewImage()">Добавить ссылку</button>
+              </div>
+
+              <div class="array-list" formArrayName="previewImages">
+                <div
+                  class="array-row"
+                  *ngFor="let control of previewImagesArray.controls; let i = index; trackBy: trackByControl">
+                  <input [formControlName]="i" type="text" placeholder="assets/stockWoman.webp" />
+                  <button class="icon-btn" type="button" (click)="removePreviewImage(i)">×</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="array-section__head">
+              <div class="section-title section-title--compact">
+                <h3>Полная биография</h3>
+                <p>Каждая секция редактируется через FormArray.</p>
+              </div>
+
+              <button class="btn btn--soft" type="button" (click)="addBiographySection()">
+                Добавить секцию
+              </button>
+            </div>
+
+            <div class="biography-list" formArrayName="fullBiography">
+              <div
+                class="biography-card"
+                *ngFor="let block of biographyArray.controls; let i = index; trackBy: trackByControl"
+                [formGroupName]="i">
+                <div class="biography-card__head">
+                  <h4>Секция {{ i + 1 }}</h4>
+                  <button class="icon-btn" type="button" (click)="removeBiographySection(i)">×</button>
+                </div>
+
+                <div class="grid">
+                  <label class="field">
+                    <span>Тип</span>
+                    <input type="text" formControlName="type" placeholder="text" />
+                  </label>
+
+                  <label class="field">
+                    <span>Заголовок</span>
+                    <input type="text" formControlName="title" placeholder="Происхождение и ранние годы" />
+                  </label>
+
+                  <label class="field field--full">
+                    <span>Текст</span>
+                    <textarea rows="6" formControlName="text"></textarea>
+                  </label>
+
+                  <label class="field field--full">
+                    <span>Ссылка на фото</span>
+                    <input type="text" formControlName="image" placeholder="assets/stockWoman.webp" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="validation-hint" *ngIf="form.invalid && (form.dirty || form.touched)">
+            Проверьте обязательные поля: ID, имя, годы жизни, регион, город, век, описание, hero-image и тексты биографии.
+          </div>
+
           <div class="form-actions">
-            <button class="btn btn--soft" type="button" (click)="createNewRecord()">Очистить форму</button>
-            <button class="btn" type="submit" [disabled]="isSaving()">
-              {{ isSaving() ? 'Сохраняем...' : 'Сохранить в базу' }}
+            <button class="btn btn--soft" type="button" (click)="startCreateRecord()">Очистить форму</button>
+            <button class="btn" type="submit" [disabled]="form.invalid || isLoading() || isSaving()">
+              {{ isSaving() ? 'Сохраняем...' : 'Сохранить изменения' }}
             </button>
           </div>
         </form>
       </section>
-    </section>
-  </div>
+    </div>
+  </section>
 </main>

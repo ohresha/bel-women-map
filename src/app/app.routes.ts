@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: 'history-context', component: HistoryContextComponent },
   { path: 'woman/:id', component: WomanDetailComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'admin', component: AdminDashboardComponent, canActivate: [authGuard] },
+  { path: 'admin', redirectTo: 'admin-panel', pathMatch: 'full' },
+  { path: 'admin-panel', component: AdminDashboardComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' }
 ];
