@@ -2,7 +2,7 @@ export interface WomanProfile {
   id: string;
   name: string;
   birth: number;
-  death: number;
+  death: number | null;
   region: string;
   city: string;
   categories: string[];

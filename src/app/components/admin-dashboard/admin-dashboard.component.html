@@ -1,15 +1,11 @@
 <main class="admin-page">
-  <div class="ornament ornament--left"></div>
-  <div class="ornament ornament--right"></div>
-
   <section class="dashboard-shell">
     <header class="hero">
       <div class="hero__copy">
         <p class="hero__eyebrow">Панель администратора</p>
-        <h1>Редактирование женщин проекта</h1>
+        <h1>Редактирование и добавление записей</h1>
         <p class="hero__lead">
-          Выберите запись слева, объедините данные из <strong>/profiles</strong> и <strong>/details</strong>
-          в одной форме и сохраните изменения обратно в Firebase Realtime Database.
+          Выберите запись в списке слева, заполните данные и нажмите "Сохранить" для записи в Firebase Realtime Database.
         </p>
       </div>
 
@@ -27,8 +23,8 @@
 
       <div class="hero__actions">
         <a class="btn btn--soft" routerLink="/">На главную</a>
-        <button class="btn btn--soft" type="button" (click)="startCreateRecord()">Новая запись</button>
         <button class="btn btn--ghost" type="button" (click)="logout()">Выйти</button>
+        <button class="btn btn--soft btn--new" type="button" (click)="startCreateRecord()">Новая запись</button>
       </div>
     </header>
 
@@ -41,12 +37,21 @@
 
     <div class="mobile-picker">
       <label class="field">
+        <span>Поиск по имени</span>
+        <input
+          type="search"
+          [value]="searchQuery()"
+          (input)="updateSearch(($any($event.target).value))"
+          placeholder="Введите имя для поиска" />
+      </label>
+
+      <label class="field">
         <span>Быстрый выбор записи</span>
         <select
           [value]="selectedId() ?? ''"
           (change)="selectRecord(($any($event.target).value))">
           <option value="" disabled>Выберите женщину</option>
-          <option *ngFor="let record of records(); trackBy: trackByRecord" [value]="record.id">
+          <option *ngFor="let record of filteredRecords(); trackBy: trackByRecord" [value]="record.id">
             {{ record.name }}
           </option>
         </select>
@@ -61,14 +66,22 @@
       <aside class="sidebar" [class.sidebar--open]="isMobileListOpen()">
         <div class="panel-head">
           <div>
-            <p class="panel-head__eyebrow">Левая панель</p>
-            <h2>Список женщин</h2>
+            <h2>Список записей</h2>
           </div>
         </div>
 
-        <div class="sidebar__list" *ngIf="records().length; else emptyList">
+        <label class="field field--search">
+          <span>Поиск записи по имени</span>
+          <input
+            type="search"
+            [value]="searchQuery()"
+            (input)="updateSearch(($any($event.target).value))"
+            placeholder="Например, Стефания" />
+        </label>
+
+        <div class="sidebar__list" *ngIf="filteredRecords().length; else emptyList">
           <button
-            *ngFor="let record of records(); trackBy: trackByRecord"
+            *ngFor="let record of filteredRecords(); trackBy: trackByRecord"
             type="button"
             class="record-card"
             [class.record-card--active]="selectedId() === record.id && !isCreating()"
@@ -81,8 +94,10 @@
 
         <ng-template #emptyList>
           <div class="empty-state">
-            <h3>Записей пока нет</h3>
-            <p>Создайте первую запись и сохраните её в базу.</p>
+            <h3>{{ searchQuery() ? 'Ничего не найдено' : 'Записей пока нет' }}</h3>
+            <p>
+              {{ searchQuery() ? 'Попробуйте изменить строку поиска.' : 'Создайте первую запись и сохраните её в базу.' }}
+            </p>
           </div>
         </ng-template>
       </aside>
@@ -90,7 +105,6 @@
       <section class="editor">
         <div class="panel-head">
           <div>
-            <p class="panel-head__eyebrow">Правая панель</p>
             <h2>{{ isCreating() ? 'Новая запись' : 'Редактирование записи' }}</h2>
           </div>
 
@@ -104,8 +118,8 @@
         <form class="editor-form" [formGroup]="form" (ngSubmit)="save()" [attr.data-form-render-key]="formRenderKey()">
           <section class="card">
             <div class="section-title">
-              <h3>Основные поля профиля</h3>
-              <p>Данные сохраняются в узел <strong>/profiles</strong>.</p>
+              <h3>Основная информация</h3>
+              <p>Данные используются в окне с краткой информацией</p>
             </div>
 
             <div class="grid grid--two">
@@ -114,7 +128,7 @@
                 <input
                   type="text"
                   formControlName="id"
-                  [readonly]="!isCreating()"
+                  readonly
                   placeholder="Евфросиния_Полоцкая" />
               </label>
 
@@ -125,27 +139,45 @@
 
               <label class="field">
                 <span>Год рождения</span>
-                <input type="number" formControlName="birth" />
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="4"
+                  formControlName="birth"
+                  (input)="sanitizeYearInput('birth', $event)" />
               </label>
 
               <label class="field">
                 <span>Год смерти</span>
-                <input type="number" formControlName="death" />
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="4"
+                  formControlName="death"
+                  (input)="sanitizeYearInput('death', $event)" />
               </label>
 
               <label class="field">
-                <span>Регион</span>
-                <input type="text" formControlName="region" />
+                <span>Область</span>
+                <select formControlName="region">
+                  <option *ngFor="let region of belarusRegions; let i = index; trackBy: trackByIndex" [value]="region">
+                    {{ region }}
+                  </option>
+                </select>
               </label>
 
               <label class="field">
-                <span>Город</span>
+                <span>Населенный пункт или район</span>
                 <input type="text" formControlName="city" />
               </label>
 
               <label class="field">
                 <span>Век</span>
-                <input type="text" formControlName="century" placeholder="XIX век" />
+                <select formControlName="century">
+                  <option *ngFor="let century of centuries; let i = index; trackBy: trackByIndex" [value]="century">
+                    {{ century }}
+                  </option>
+                </select>
               </label>
 
               <label class="field field--full">
@@ -193,10 +225,54 @@
             </div>
 
             <div class="grid">
-              <label class="field">
-                <span>Hero-image</span>
-                <input type="text" formControlName="heroImage" placeholder="assets/stockWoman.webp" />
-              </label>
+              <div class="image-field">
+                <div class="image-field__top">
+                  <label class="field">
+                    <span>Hero-image</span>
+                  </label>
+
+                  <div class="input-mode-toggle" role="tablist" aria-label="Режим загрузки hero-image">
+                    <button
+                      class="input-mode-toggle__btn"
+                      type="button"
+                      [class.input-mode-toggle__btn--active]="getImageInputMode('heroImage') === 'url'"
+                      (click)="setImageInputMode('heroImage', 'url')">
+                      Ссылка
+                    </button>
+                    <button
+                      class="input-mode-toggle__btn"
+                      type="button"
+                      [class.input-mode-toggle__btn--active]="getImageInputMode('heroImage') === 'upload'"
+                      (click)="setImageInputMode('heroImage', 'upload')">
+                      Загрузить файл
+                    </button>
+                  </div>
+                </div>
+
+                <div class="image-field__body">
+                  <label class="field field--full" *ngIf="getImageInputMode('heroImage') === 'url'; else heroFileInput">
+                    <input type="text" formControlName="heroImage" placeholder="assets/stockWoman.webp" />
+                  </label>
+
+                  <ng-template #heroFileInput>
+                    <div class="upload-box">
+                      <label class="file-picker">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          (change)="uploadImageForControl($event, form.controls.heroImage, 'heroImage')" />
+                        <span class="file-picker__label">Выбрать файл</span>
+                      </label>
+                      <span class="upload-status" *ngIf="isImageUploading('heroImage')">Загрузка...</span>
+                      <span class="upload-error" *ngIf="getUploadError('heroImage')">{{ getUploadError('heroImage') }}</span>
+                    </div>
+                  </ng-template>
+
+                  <div class="image-preview" *ngIf="getImagePreview(form.controls.heroImage.value) as heroPreview">
+                    <img [src]="heroPreview" alt="Предпросмотр hero-image" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="array-section">
@@ -206,8 +282,58 @@
               </div>
 
               <div class="array-list" formArrayName="images">
-                <div class="array-row" *ngFor="let control of imagesArray.controls; let i = index; trackBy: trackByControl">
-                  <input [formControlName]="i" type="text" placeholder="assets/stockWoman.webp" />
+                <div class="image-array-row" *ngFor="let control of imagesArray.controls; let i = index; trackBy: trackByControl">
+                  <div class="image-field">
+                    <div class="image-field__top">
+                      <span class="image-field__label">Изображение {{ i + 1 }}</span>
+
+                      <div class="input-mode-toggle" role="tablist" [attr.aria-label]="'Режим изображения профиля ' + (i + 1)">
+                        <button
+                          class="input-mode-toggle__btn"
+                          type="button"
+                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('images', i)) === 'url'"
+                          (click)="setImageInputMode(getFieldKey('images', i), 'url')">
+                          Ссылка
+                        </button>
+                        <button
+                          class="input-mode-toggle__btn"
+                          type="button"
+                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('images', i)) === 'upload'"
+                          (click)="setImageInputMode(getFieldKey('images', i), 'upload')">
+                          Загрузить файл
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="image-field__body">
+                      <input
+                        *ngIf="getImageInputMode(getFieldKey('images', i)) === 'url'; else imageFileInput"
+                        [formControlName]="i"
+                        type="text"
+                        placeholder="assets/stockWoman.webp" />
+
+                      <ng-template #imageFileInput>
+                        <div class="upload-box">
+                          <label class="file-picker">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              (change)="uploadImageForControl($event, control, getFieldKey('images', i))" />
+                            <span class="file-picker__label">Выбрать файл</span>
+                          </label>
+                          <span class="upload-status" *ngIf="isImageUploading(getFieldKey('images', i))">Загрузка...</span>
+                          <span class="upload-error" *ngIf="getUploadError(getFieldKey('images', i))">
+                            {{ getUploadError(getFieldKey('images', i)) }}
+                          </span>
+                        </div>
+                      </ng-template>
+
+                      <div class="image-preview" *ngIf="getImagePreview(control.value) as imagePreview">
+                        <img [src]="imagePreview" [alt]="'Предпросмотр изображения профиля ' + (i + 1)" />
+                      </div>
+                    </div>
+                  </div>
+
                   <button class="icon-btn" type="button" (click)="removeImage(i)">×</button>
                 </div>
               </div>
@@ -221,9 +347,59 @@
 
               <div class="array-list" formArrayName="previewImages">
                 <div
-                  class="array-row"
+                  class="image-array-row"
                   *ngFor="let control of previewImagesArray.controls; let i = index; trackBy: trackByControl">
-                  <input [formControlName]="i" type="text" placeholder="assets/stockWoman.webp" />
+                  <div class="image-field">
+                    <div class="image-field__top">
+                      <span class="image-field__label">Preview {{ i + 1 }}</span>
+
+                      <div class="input-mode-toggle" role="tablist" [attr.aria-label]="'Режим preview ' + (i + 1)">
+                        <button
+                          class="input-mode-toggle__btn"
+                          type="button"
+                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('previewImages', i)) === 'url'"
+                          (click)="setImageInputMode(getFieldKey('previewImages', i), 'url')">
+                          Ссылка
+                        </button>
+                        <button
+                          class="input-mode-toggle__btn"
+                          type="button"
+                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('previewImages', i)) === 'upload'"
+                          (click)="setImageInputMode(getFieldKey('previewImages', i), 'upload')">
+                          Загрузить файл
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="image-field__body">
+                      <input
+                        *ngIf="getImageInputMode(getFieldKey('previewImages', i)) === 'url'; else previewFileInput"
+                        [formControlName]="i"
+                        type="text"
+                        placeholder="assets/stockWoman.webp" />
+
+                      <ng-template #previewFileInput>
+                        <div class="upload-box">
+                          <label class="file-picker">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              (change)="uploadImageForControl($event, control, getFieldKey('previewImages', i))" />
+                            <span class="file-picker__label">Выбрать файл</span>
+                          </label>
+                          <span class="upload-status" *ngIf="isImageUploading(getFieldKey('previewImages', i))">Загрузка...</span>
+                          <span class="upload-error" *ngIf="getUploadError(getFieldKey('previewImages', i))">
+                            {{ getUploadError(getFieldKey('previewImages', i)) }}
+                          </span>
+                        </div>
+                      </ng-template>
+
+                      <div class="image-preview" *ngIf="getImagePreview(control.value) as previewImage">
+                        <img [src]="previewImage" [alt]="'Предпросмотр preview ' + (i + 1)" />
+                      </div>
+                    </div>
+                  </div>
+
                   <button class="icon-btn" type="button" (click)="removePreviewImage(i)">×</button>
                 </div>
               </div>
@@ -254,11 +430,6 @@
 
                 <div class="grid">
                   <label class="field">
-                    <span>Тип</span>
-                    <input type="text" formControlName="type" placeholder="text" />
-                  </label>
-
-                  <label class="field">
                     <span>Заголовок</span>
                     <input type="text" formControlName="title" placeholder="Происхождение и ранние годы" />
                   </label>
@@ -268,22 +439,73 @@
                     <textarea rows="6" formControlName="text"></textarea>
                   </label>
 
-                  <label class="field field--full">
-                    <span>Ссылка на фото</span>
-                    <input type="text" formControlName="image" placeholder="assets/stockWoman.webp" />
-                  </label>
+                  <div class="image-field field--full">
+                    <div class="image-field__top">
+                      <label class="field">
+                        <span>Изображение секции</span>
+                      </label>
+
+                      <div class="input-mode-toggle" role="tablist" [attr.aria-label]="'Режим изображения секции ' + (i + 1)">
+                        <button
+                          class="input-mode-toggle__btn"
+                          type="button"
+                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('fullBiography', i)) === 'url'"
+                          (click)="setImageInputMode(getFieldKey('fullBiography', i), 'url')">
+                          Ссылка
+                        </button>
+                        <button
+                          class="input-mode-toggle__btn"
+                          type="button"
+                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('fullBiography', i)) === 'upload'"
+                          (click)="setImageInputMode(getFieldKey('fullBiography', i), 'upload')">
+                          Загрузить файл
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="image-field__body">
+                      <label class="field field--full" *ngIf="getImageInputMode(getFieldKey('fullBiography', i)) === 'url'; else biographyFileInput">
+                        <input type="text" formControlName="image" placeholder="assets/stockWoman.webp" />
+                      </label>
+
+                      <ng-template #biographyFileInput>
+                        <div class="upload-box">
+                          <label class="file-picker">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              (change)="uploadImageForControl($event, block.controls.image, getFieldKey('fullBiography', i))" />
+                            <span class="file-picker__label">Выбрать файл</span>
+                          </label>
+                          <span class="upload-status" *ngIf="isImageUploading(getFieldKey('fullBiography', i))">Загрузка...</span>
+                          <span class="upload-error" *ngIf="getUploadError(getFieldKey('fullBiography', i))">
+                            {{ getUploadError(getFieldKey('fullBiography', i)) }}
+                          </span>
+                        </div>
+                      </ng-template>
+
+                      <div class="image-preview" *ngIf="getImagePreview(block.controls.image.value) as biographyPreview">
+                        <img [src]="biographyPreview" [alt]="'Предпросмотр изображения секции ' + (i + 1)" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
 
           <div class="validation-hint" *ngIf="form.invalid && (form.dirty || form.touched)">
-            Проверьте обязательные поля: ID, имя, годы жизни, регион, город, век, описание, hero-image и тексты биографии.
+            <span *ngIf="form.hasError('yearsOrder'); else defaultValidationText">
+              Дата рождения не может быть позже даты смерти.
+            </span>
+            <ng-template #defaultValidationText>
+              Проверьте обязательные поля: имя, год рождения, область, город, век, описание, hero-image и тексты биографии.
+            </ng-template>
           </div>
 
           <div class="form-actions">
             <button class="btn btn--soft" type="button" (click)="startCreateRecord()">Очистить форму</button>
-            <button class="btn" type="submit" [disabled]="form.invalid || isLoading() || isSaving()">
+            <button class="btn" type="submit" [disabled]="form.invalid || isLoading() || isSaving() || hasUploadingImages()">
               {{ isSaving() ? 'Сохраняем...' : 'Сохранить изменения' }}
             </button>
           </div>

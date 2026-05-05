@@ -62,13 +62,14 @@ export class FirebaseService {
     };
   }
 
-  async saveWomanRecord(record: WomanRecord): Promise<void> {
+  async saveWomanRecord(record: WomanRecord, originalId?: string | null): Promise<void> {
     const data = await this.getWomenData();
     const profile = this.toProfile(record);
     const details = this.toDetails(record);
+    const lookupId = originalId?.trim() || record.id;
 
-    let profileIndex = data.profiles.findIndex((item) => item.id === record.id);
-    let detailsIndex = data.details.findIndex((item) => item.id === record.id);
+    let profileIndex = data.profiles.findIndex((item) => item.id === lookupId);
+    let detailsIndex = data.details.findIndex((item) => item.id === lookupId);
 
     if (profileIndex === -1) {
       profileIndex = data.profiles.length;

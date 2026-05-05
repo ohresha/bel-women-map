@@ -12,29 +12,6 @@
   color: $color-text-main;
 }
 
-.ornament {
-  position: absolute;
-  width: 280px;
-  height: 280px;
-  border-radius: 50%;
-  border: 1px solid rgba($color-primary, 0.08);
-  background:
-    radial-gradient(circle, rgba($color-accent, 0.16) 0%, rgba($color-accent, 0.04) 36%, transparent 68%),
-    repeating-radial-gradient(circle, rgba($color-primary, 0.08) 0 6px, transparent 6px 18px);
-  filter: blur(1px);
-  pointer-events: none;
-}
-
-.ornament--left {
-  top: -70px;
-  left: -80px;
-}
-
-.ornament--right {
-  right: -100px;
-  bottom: 18%;
-}
-
 .dashboard-shell {
   position: relative;
   z-index: 1;
@@ -63,6 +40,10 @@
   padding: 28px;
   display: grid;
   gap: 20px;
+}
+
+.section-title{
+  margin-bottom: 10px;
 }
 
 .hero__copy h1,
@@ -297,6 +278,13 @@
   }
 }
 
+.field--search {
+  padding: 14px;
+  border-radius: 20px;
+  background: linear-gradient(165deg, rgba($color-surface, 0.76), rgba($color-bg-light, 0.82));
+  border: 1px solid rgba($color-primary, 0.08);
+}
+
 .inline-grid {
   display: grid;
   gap: 10px;
@@ -357,6 +345,140 @@ textarea {
   }
 }
 
+.image-array-row {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+
+  @media (min-width: 900px) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.image-field {
+  display: grid;
+  gap: 12px;
+}
+
+.image-field__top,
+.image-field__body {
+  display: grid;
+  gap: 12px;
+}
+
+.image-field__top {
+  @media (min-width: 760px) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.image-field__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba($color-primary-dark, 0.88);
+}
+
+.input-mode-toggle {
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba($color-primary, 0.12);
+  background: linear-gradient(165deg, rgba($color-surface, 0.92), rgba($color-bg-light, 0.92));
+  box-shadow: 0 12px 24px rgba($color-text-main, 0.06);
+}
+
+.input-mode-toggle__btn {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: $color-primary-dark;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-1px);
+  }
+}
+
+.input-mode-toggle__btn--active {
+  color: $color-surface;
+  background: linear-gradient(135deg, $color-primary 0%, $color-accent 100%);
+  box-shadow: 0 10px 18px rgba($color-primary-dark, 0.18);
+}
+
+.upload-box {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px dashed rgba($color-primary, 0.26);
+  background: linear-gradient(165deg, rgba($color-surface, 0.82), rgba($color-bg-light, 0.86));
+}
+
+.file-picker {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.file-picker input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-picker__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  color: $color-primary-dark;
+  font-weight: 800;
+  border: 1px solid rgba($color-primary, 0.14);
+  background: linear-gradient(165deg, rgba($color-surface, 0.96), rgba($color-bg-light, 0.94));
+  box-shadow: 0 12px 24px rgba($color-text-main, 0.08);
+}
+
+.upload-status {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba($color-primary-dark, 0.78);
+}
+
+.upload-error {
+  font-size: 14px;
+  font-weight: 700;
+  color: #842d2d;
+}
+
+.image-preview {
+  max-width: 320px;
+  padding: 10px;
+  border-radius: 24px;
+  border: 1px solid rgba($color-primary, 0.12);
+  background: linear-gradient(165deg, rgba($color-surface, 0.92), rgba($color-bg-light, 0.92));
+  box-shadow: 0 14px 30px rgba($color-text-main, 0.08);
+}
+
+.image-preview img {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
 .btn,
 .icon-btn {
   appearance: none;
@@ -395,6 +517,12 @@ textarea {
   box-shadow: 0 10px 20px rgba($color-text-main, 0.07);
 }
 
+.btn--new{
+  color: #ffffff;
+  background: linear-gradient( 135deg, #2f6b3f 0%, #6f8f3f 100%);
+  box-shadow: 0 10px 18px rgba(35, 79, 47, 0.18);
+}
+
 .icon-btn {
   width: 44px;
   height: 44px;
@@ -421,7 +549,7 @@ textarea {
   }
 
   .hero__actions {
-    justify-content: flex-end;
+    justify-content: flex-start;
     align-self: end;
   }
 }

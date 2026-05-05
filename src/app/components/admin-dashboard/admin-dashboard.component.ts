@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
@@ -7,18 +8,37 @@ import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
   Validators
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { FirebaseService } from '../../services/firebase.service';
+import { ImageUploadService } from '../../services/image-upload.service';
 import { BiographyBlock, WomanDetails, WomanProfile, WomanRecord } from '../../models/woman-record.model';
+import { distinctUntilChanged, finalize } from 'rxjs';
 
 type BiographySectionForm = FormGroup<{
-  type: FormControl<string>;
   title: FormControl<string>;
   text: FormControl<string>;
   image: FormControl<string>;
 }>;
+
+const YEARS_ORDER_VALIDATOR: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const birth = Number(control.get('birth')?.value);
+  const deathValue = control.get('death')?.value;
+
+  if (!Number.isFinite(birth) || deathValue === null || deathValue === '') {
+    return null;
+  }
+
+  const death = Number(deathValue);
+  if (!Number.isFinite(death)) {
+    return null;
+  }
+
+  return birth <= death ? null : { yearsOrder: true };
+};
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -29,6 +49,7 @@ type BiographySectionForm = FormGroup<{
 export class AdminDashboardComponent {
   private readonly fb = inject(FormBuilder);
   private readonly firebaseService = inject(FirebaseService);
+  private readonly imageUploadService = inject(ImageUploadService);
   private readonly router = inject(Router);
 
   readonly user$ = this.firebaseService.user$;
@@ -41,15 +62,38 @@ export class AdminDashboardComponent {
   readonly feedbackMessage = signal('');
   readonly feedbackType = signal<'success' | 'error'>('success');
   readonly formRenderKey = signal(0);
+  readonly searchQuery = signal('');
+  readonly editingSourceId = signal<string | null>(null);
+  readonly imageInputModes = signal<Record<string, 'url' | 'upload'>>({});
+  readonly uploadingStates = signal<Record<string, boolean>>({});
+  readonly uploadErrors = signal<Record<string, string>>({});
+  readonly belarusRegions = [
+    'Брестская область',
+    'Витебская область',
+    'Гомельская область',
+    'Гродненская область',
+    'Минская область',
+    'Могилёвская область'
+  ];
+  readonly centuries = Array.from({ length: 12 }, (_, index) => `${index + 10} век`);
   readonly selectedRecord = computed(() =>
     this.records().find((record) => record.id === this.selectedId()) ?? null
   );
+  readonly filteredRecords = computed(() => {
+    const query = this.searchQuery().trim().toLocaleLowerCase('ru');
+
+    if (!query) {
+      return this.records();
+    }
+
+    return this.records().filter((record) => record.name.toLocaleLowerCase('ru').includes(query));
+  });
 
   readonly form = this.fb.group({
-    id: this.fb.nonNullable.control('', [Validators.required]),
+    id: this.fb.nonNullable.control({ value: '', disabled: true }, [Validators.required]),
     name: this.fb.nonNullable.control('', [Validators.required]),
     birth: this.fb.control<number | null>(null, [Validators.required]),
-    death: this.fb.control<number | null>(null, [Validators.required]),
+    death: this.fb.control<number | null>(null),
     region: this.fb.nonNullable.control('', [Validators.required]),
     city: this.fb.nonNullable.control('', [Validators.required]),
     century: this.fb.nonNullable.control('', [Validators.required]),
@@ -63,9 +107,15 @@ export class AdminDashboardComponent {
     images: this.fb.array<FormControl<string>>([]),
     previewImages: this.fb.array<FormControl<string>>([]),
     fullBiography: this.fb.array<BiographySectionForm>([])
-  });
+  }, { validators: [YEARS_ORDER_VALIDATOR] });
 
   constructor() {
+    this.form.controls.name.valueChanges
+      .pipe(distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe((name) => {
+        this.form.controls.id.setValue(this.buildIdFromName(name), { emitEvent: false });
+      });
+
     void this.loadRecords();
   }
 
@@ -95,6 +145,11 @@ export class AdminDashboardComponent {
   }
 
   async save(): Promise<void> {
+    if (this.hasActiveUploads()) {
+      this.setFeedback('Дождитесь завершения загрузки изображений, прежде чем сохранять запись.', 'error');
+      return;
+    }
+
     if (this.form.invalid || this.isLoading() || this.isSaving()) {
       this.form.markAllAsTouched();
       return;
@@ -105,10 +160,11 @@ export class AdminDashboardComponent {
 
     try {
       const record = this.buildRecordFromForm();
-      await this.firebaseService.saveWomanRecord(record);
+      const originalId = this.editingSourceId();
+      await this.firebaseService.saveWomanRecord(record, originalId);
 
       const nextRecords = [...this.records()];
-      const existingIndex = nextRecords.findIndex((item) => item.id === record.id);
+      const existingIndex = nextRecords.findIndex((item) => item.id === (originalId ?? record.id));
 
       if (existingIndex >= 0) {
         nextRecords[existingIndex] = record;
@@ -119,6 +175,7 @@ export class AdminDashboardComponent {
       nextRecords.sort((left, right) => left.name.localeCompare(right.name, 'ru'));
       this.records.set(nextRecords);
       this.selectedId.set(record.id);
+      this.editingSourceId.set(record.id);
       this.isCreating.set(false);
       this.setFeedback('Изменения сохранены в Firebase Realtime Database.', 'success');
     } catch (error) {
@@ -136,6 +193,7 @@ export class AdminDashboardComponent {
     }
 
     this.selectedId.set(record.id);
+    this.editingSourceId.set(record.id);
     this.isCreating.set(false);
     this.isMobileListOpen.set(false);
     this.fillForm(record);
@@ -144,6 +202,7 @@ export class AdminDashboardComponent {
 
   startCreateRecord(): void {
     this.selectedId.set(null);
+    this.editingSourceId.set(null);
     this.isCreating.set(true);
     this.isMobileListOpen.set(false);
     this.fillForm();
@@ -198,6 +257,10 @@ export class AdminDashboardComponent {
     this.isMobileListOpen.set(!this.isMobileListOpen());
   }
 
+  updateSearch(query: string): void {
+    this.searchQuery.set(query);
+  }
+
   trackByRecord(_: number, record: WomanRecord): string {
     return record.id;
   }
@@ -210,8 +273,89 @@ export class AdminDashboardComponent {
     return control;
   }
 
+  getImageInputMode(fieldKey: string): 'url' | 'upload' {
+    return this.imageInputModes()[fieldKey] ?? 'url';
+  }
+
+  setImageInputMode(fieldKey: string, mode: 'url' | 'upload'): void {
+    this.imageInputModes.update((state) => ({
+      ...state,
+      [fieldKey]: mode
+    }));
+    this.clearUploadError(fieldKey);
+  }
+
+  isImageUploading(fieldKey: string): boolean {
+    return this.uploadingStates()[fieldKey] ?? false;
+  }
+
+  hasUploadingImages(): boolean {
+    return this.hasActiveUploads();
+  }
+
+  getUploadError(fieldKey: string): string {
+    return this.uploadErrors()[fieldKey] ?? '';
+  }
+
+  getImagePreview(value: string | null | undefined): string | null {
+    const normalizedValue = value?.trim() ?? '';
+    return normalizedValue ? normalizedValue : null;
+  }
+
+  getFieldKey(section: 'images' | 'previewImages' | 'fullBiography', index: number): string {
+    if (section === 'fullBiography') {
+      return `fullBiography:${index}:image`;
+    }
+
+    return `${section}:${index}`;
+  }
+
+  uploadImageForControl(event: Event, control: FormControl<string>, fieldKey: string): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.setUploadingState(fieldKey, true);
+    this.clearUploadError(fieldKey);
+
+    this.imageUploadService.uploadImage(file)
+      .pipe(finalize(() => {
+        this.setUploadingState(fieldKey, false);
+        input.value = '';
+      }))
+      .subscribe({
+        next: (imageUrl) => {
+          control.setValue(imageUrl);
+          control.markAsDirty();
+          control.markAsTouched();
+          this.setFeedback('Изображение успешно загружено в ImgBB.', 'success');
+        },
+        error: (error: unknown) => {
+          console.error(error);
+          const message = error instanceof Error
+            ? error.message
+            : 'Не удалось загрузить изображение. Попробуйте выбрать другой файл.';
+          this.setUploadError(fieldKey, message);
+          this.setFeedback(message, 'error');
+        }
+      });
+  }
+
   controlHasError(control: AbstractControl | null, errorCode: string): boolean {
     return !!control && control.hasError(errorCode) && (control.dirty || control.touched);
+  }
+
+  sanitizeYearInput(controlName: 'birth' | 'death', event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digitsOnly = input.value.replace(/\D+/g, '').slice(0, 4);
+    input.value = digitsOnly;
+    this.form.controls[controlName].setValue(digitsOnly ? Number(digitsOnly) : null);
+    this.form.controls[controlName].markAsDirty();
+    this.form.controls[controlName].markAsTouched();
+    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
   }
 
   private async loadRecords(): Promise<void> {
@@ -259,9 +403,13 @@ export class AdminDashboardComponent {
     this.form.setControl('previewImages', this.createStringArray(nextRecord.previewImages, ['assets/stockWoman.webp']));
     this.form.setControl('coordinates', this.createCoordinatesArray(nextRecord.coordinates));
     this.form.setControl('fullBiography', this.createBiographyArray(nextRecord.fullBiography));
+    this.imageInputModes.set({});
+    this.uploadingStates.set({});
+    this.uploadErrors.set({});
 
     this.form.markAsPristine();
     this.form.markAsUntouched();
+    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
     this.formRenderKey.update((value) => value + 1);
   }
 
@@ -287,7 +435,6 @@ export class AdminDashboardComponent {
 
   private createBiographyGroup(block?: BiographyBlock): BiographySectionForm {
     return this.fb.group({
-      type: this.fb.nonNullable.control(block?.type ?? 'text', [Validators.required]),
       title: this.fb.nonNullable.control(this.extractBiographyTitle(block), [Validators.required]),
       text: this.fb.nonNullable.control(this.extractBiographyText(block), [Validators.required]),
       image: this.fb.nonNullable.control(this.extractBiographyImage(block))
@@ -302,10 +449,10 @@ export class AdminDashboardComponent {
     const coordinates = rawValue.coordinates.map((value) => Number(value)) as [number, number];
 
     return {
-      id: rawValue.id.trim(),
+      id: this.form.controls.id.getRawValue().trim(),
       name: rawValue.name.trim(),
       birth: Number(rawValue.birth),
-      death: Number(rawValue.death),
+      death: rawValue.death === null ? null : Number(rawValue.death),
       region: rawValue.region.trim(),
       city: rawValue.city.trim(),
       century: rawValue.century.trim(),
@@ -319,27 +466,10 @@ export class AdminDashboardComponent {
     };
   }
 
-  private mapBiographySection(section: { type: string; title: string; text: string; image: string }): BiographyBlock {
-    const type = section.type.trim();
+  private mapBiographySection(section: { title: string; text: string; image: string }): BiographyBlock {
     const title = section.title.trim();
     const text = section.text.trim();
     const image = section.image.trim();
-
-    if (type === 'quote') {
-      return {
-        type: 'quote',
-        text,
-        author: title || undefined
-      };
-    }
-
-    if (type === 'image-gallery') {
-      return {
-        type: 'image-gallery',
-        title,
-        images: image ? [{ src: image, caption: text }] : []
-      };
-    }
 
     return {
       type: 'text',
@@ -390,10 +520,10 @@ export class AdminDashboardComponent {
       id: '',
       name: '',
       birth: new Date().getFullYear(),
-      death: new Date().getFullYear(),
-      region: '',
+      death: null,
+      region: this.belarusRegions[4],
       city: '',
-      century: '',
+      century: this.centuries[0],
       shortInfo: '',
       coordinates: [53.9, 27.5667],
       categories: [''],
@@ -416,11 +546,7 @@ export class AdminDashboardComponent {
       return '';
     }
 
-    if (block.type === 'quote') {
-      return block.author ?? '';
-    }
-
-    return block.title ?? '';
+    return block.type === 'text' ? block.title ?? '' : '';
   }
 
   private extractBiographyText(block?: BiographyBlock): string {
@@ -428,11 +554,7 @@ export class AdminDashboardComponent {
       return '';
     }
 
-    if (block.type === 'image-gallery') {
-      return block.images[0]?.caption ?? '';
-    }
-
-    return block.text ?? '';
+    return block.type === 'text' ? block.text ?? '' : '';
   }
 
   private extractBiographyImage(block?: BiographyBlock): string {
@@ -440,19 +562,49 @@ export class AdminDashboardComponent {
       return '';
     }
 
-    if (block.type === 'text') {
-      return block.image ?? '';
-    }
+    return block.type === 'text' ? block.image ?? '' : '';
+  }
 
-    if (block.type === 'image-gallery') {
-      return block.images[0]?.src ?? '';
-    }
-
-    return '';
+  private buildIdFromName(name: string): string {
+    return name
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/[^\p{L}\p{N}_-]/gu, '')
+      .replace(/_+/g, '_');
   }
 
   private setFeedback(message: string, type: 'success' | 'error'): void {
     this.feedbackMessage.set(message);
     this.feedbackType.set(type);
+  }
+
+  private hasActiveUploads(): boolean {
+    return Object.values(this.uploadingStates()).some(Boolean);
+  }
+
+  private setUploadingState(fieldKey: string, isUploading: boolean): void {
+    this.uploadingStates.update((state) => ({
+      ...state,
+      [fieldKey]: isUploading
+    }));
+  }
+
+  private setUploadError(fieldKey: string, message: string): void {
+    this.uploadErrors.update((state) => ({
+      ...state,
+      [fieldKey]: message
+    }));
+  }
+
+  private clearUploadError(fieldKey: string): void {
+    this.uploadErrors.update((state) => {
+      if (!(fieldKey in state)) {
+        return state;
+      }
+
+      const nextState = { ...state };
+      delete nextState[fieldKey];
+      return nextState;
+    });
   }
 }

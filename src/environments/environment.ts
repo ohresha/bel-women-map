@@ -12,5 +12,6 @@ export const environment = {
   firestore: {
     womenCollection: 'women'
   },
-  adminEmails: ['topchellgg@gmail.com']
+  adminEmails: ['topchellgg@gmail.com'],
+  imgbbApiKey: '0c0fcc3a41258994eec0cddb656e68d1'
 };
