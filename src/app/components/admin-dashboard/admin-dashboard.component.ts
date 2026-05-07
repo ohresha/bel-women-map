@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, ElementRef, inject, signal, ViewChild } from '@angular/core';
 import {
   AbstractControl,
   FormArray,
@@ -13,6 +13,7 @@ import {
   Validators
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import * as L from 'leaflet';
 import { FirebaseService } from '../../services/firebase.service';
 import { ImageUploadService } from '../../services/image-upload.service';
 import { BiographyBlock, WomanDetails, WomanProfile, WomanRecord } from '../../models/woman-record.model';
@@ -47,10 +48,15 @@ const YEARS_ORDER_VALIDATOR: ValidatorFn = (control: AbstractControl): Validatio
   styleUrl: './admin-dashboard.component.scss'
 })
 export class AdminDashboardComponent {
+  @ViewChild('coordinatePickerMap') private coordinatePickerMap?: ElementRef<HTMLDivElement>;
+
   private readonly fb = inject(FormBuilder);
   private readonly firebaseService = inject(FirebaseService);
   private readonly imageUploadService = inject(ImageUploadService);
   private readonly router = inject(Router);
+  private coordinateMap?: L.Map;
+  private coordinateMarker?: L.Marker;
+  private coordinateMapTimerId?: number;
 
   readonly user$ = this.firebaseService.user$;
   readonly records = signal<WomanRecord[]>([]);
@@ -67,6 +73,8 @@ export class AdminDashboardComponent {
   readonly imageInputModes = signal<Record<string, 'url' | 'upload'>>({});
   readonly uploadingStates = signal<Record<string, boolean>>({});
   readonly uploadErrors = signal<Record<string, string>>({});
+  readonly isCoordinatePickerOpen = signal(false);
+  readonly draftCoordinates = signal<[number, number] | null>(null);
   readonly belarusRegions = [
     'Брестская область',
     'Витебская область',
@@ -74,6 +82,14 @@ export class AdminDashboardComponent {
     'Гродненская область',
     'Минская область',
     'Могилёвская область'
+  ];
+  readonly categoryOptions = [
+    'Наука',
+    'Искусство',
+    'Литература',
+    'Спорт',
+    'Просвещение',
+    'Политика'
   ];
   readonly centuries = Array.from({ length: 12 }, (_, index) => `${index + 10} век`);
   readonly selectedRecord = computed(() =>
@@ -119,6 +135,10 @@ export class AdminDashboardComponent {
     void this.loadRecords();
   }
 
+  ngOnDestroy(): void {
+    this.destroyCoordinateMap();
+  }
+
   get coordinatesArray(): FormArray<FormControl<number | null>> {
     return this.form.controls.coordinates;
   }
@@ -142,6 +162,43 @@ export class AdminDashboardComponent {
   async logout(): Promise<void> {
     await this.firebaseService.logout();
     await this.router.navigateByUrl('/login');
+  }
+
+  openCoordinatePicker(): void {
+    const currentCoordinates = this.getCurrentCoordinates();
+    this.draftCoordinates.set(currentCoordinates);
+    this.isCoordinatePickerOpen.set(true);
+
+    if (typeof window !== 'undefined') {
+      window.clearTimeout(this.coordinateMapTimerId);
+      this.coordinateMapTimerId = window.setTimeout(() => {
+        this.initializeCoordinateMap(currentCoordinates);
+      }, 0);
+    }
+  }
+
+  closeCoordinatePicker(): void {
+    this.isCoordinatePickerOpen.set(false);
+    this.destroyCoordinateMap();
+  }
+
+  confirmCoordinateSelection(): void {
+    const coordinates = this.draftCoordinates();
+    if (!coordinates) {
+      return;
+    }
+
+    const [lat, lng] = coordinates.map((value) => Number(value.toFixed(6))) as [number, number];
+    this.form.patchValue({
+      coordinates: [lat, lng]
+    });
+    this.coordinatesArray.controls.forEach((control) => {
+      control.markAsDirty();
+      control.markAsTouched();
+    });
+    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+    this.setFeedback('Координаты обновлены по выбранной точке на карте.', 'success');
+    this.closeCoordinatePicker();
   }
 
   async save(): Promise<void> {
@@ -210,14 +267,34 @@ export class AdminDashboardComponent {
   }
 
   addCategory(value = ''): void {
-    this.categoriesArray.push(this.fb.nonNullable.control(value, [Validators.required]));
+    const normalizedValue = value.trim();
+
+    if (!normalizedValue || this.categoriesArray.value.includes(normalizedValue)) {
+      return;
+    }
+
+    this.categoriesArray.push(this.fb.nonNullable.control(normalizedValue));
+    this.categoriesArray.markAsDirty();
+    this.categoriesArray.markAsTouched();
+    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
   }
 
   removeCategory(index: number): void {
     this.categoriesArray.removeAt(index);
-    if (this.categoriesArray.length === 0) {
-      this.addCategory();
-    }
+    this.categoriesArray.markAsDirty();
+    this.categoriesArray.markAsTouched();
+    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+  }
+
+  addCategoryFromSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const nextValue = select.value;
+    this.addCategory(nextValue);
+    select.value = '';
+  }
+
+  isCategorySelected(category: string): boolean {
+    return this.categoriesArray.value.includes(category);
   }
 
   addImage(value = ''): void {
@@ -385,6 +462,7 @@ export class AdminDashboardComponent {
 
   private fillForm(record?: WomanRecord): void {
     const nextRecord = record ?? this.createEmptyRecord();
+    this.closeCoordinatePicker();
 
     this.form.reset({
       id: nextRecord.id,
@@ -398,7 +476,7 @@ export class AdminDashboardComponent {
       heroImage: nextRecord.heroImage
     });
 
-    this.form.setControl('categories', this.createStringArray(nextRecord.categories, ['']));
+    this.form.setControl('categories', this.createCategoriesArray(nextRecord.categories));
     this.form.setControl('images', this.createStringArray(nextRecord.images, ['assets/stockWoman.webp']));
     this.form.setControl('previewImages', this.createStringArray(nextRecord.previewImages, ['assets/stockWoman.webp']));
     this.form.setControl('coordinates', this.createCoordinatesArray(nextRecord.coordinates));
@@ -417,6 +495,15 @@ export class AdminDashboardComponent {
     const normalizedValues = values.length > 0 ? values : fallback;
     return this.fb.array(
       normalizedValues.map((value) => this.fb.nonNullable.control(value, [Validators.required]))
+    );
+  }
+
+  private createCategoriesArray(values: string[]): FormArray<FormControl<string>> {
+    const normalizedValues = this.normalizeStringList(values)
+      .filter((value, index, array) => array.indexOf(value) === index);
+
+    return this.fb.array(
+      normalizedValues.map((value) => this.fb.nonNullable.control(value))
     );
   }
 
@@ -576,6 +663,87 @@ export class AdminDashboardComponent {
   private setFeedback(message: string, type: 'success' | 'error'): void {
     this.feedbackMessage.set(message);
     this.feedbackType.set(type);
+  }
+
+  private getCurrentCoordinates(): [number, number] {
+    const rawCoordinates = this.form.getRawValue().coordinates;
+    const lat = Number(rawCoordinates[0]);
+    const lng = Number(rawCoordinates[1]);
+
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return [lat, lng];
+    }
+
+    return [53.9, 27.5667];
+  }
+
+  private initializeCoordinateMap(initialCoordinates: [number, number]): void {
+    const mapHost = this.coordinatePickerMap?.nativeElement;
+    if (!mapHost) {
+      return;
+    }
+
+    this.destroyCoordinateMap();
+
+    this.coordinateMap = L.map(mapHost, {
+      attributionControl: false,
+      zoomControl: true,
+      preferCanvas: true
+    }).setView(initialCoordinates, 7);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      minZoom: 5,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(this.coordinateMap);
+
+    this.coordinateMap.on('click', (event: L.LeafletMouseEvent) => {
+      const nextCoordinates: [number, number] = [event.latlng.lat, event.latlng.lng];
+      this.draftCoordinates.set(nextCoordinates);
+      this.renderCoordinateMarker(nextCoordinates);
+    });
+
+    this.renderCoordinateMarker(initialCoordinates);
+
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => {
+        this.coordinateMap?.invalidateSize();
+        this.coordinateMap?.setView(this.draftCoordinates() ?? initialCoordinates, this.coordinateMap?.getZoom() ?? 7);
+      }, 150);
+    }
+  }
+
+  private renderCoordinateMarker(coordinates: [number, number]): void {
+    if (!this.coordinateMap) {
+      return;
+    }
+
+    if (!this.coordinateMarker) {
+      this.coordinateMarker = L.marker(coordinates, {
+        icon: L.divIcon({
+          className: 'coordinate-picker-marker',
+          html: '<span class="coordinate-picker-marker__dot"></span>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 28]
+        })
+      }).addTo(this.coordinateMap);
+    } else {
+      this.coordinateMarker.setLatLng(coordinates);
+    }
+
+    this.coordinateMap.panTo(coordinates, { animate: true, duration: 0.35 });
+  }
+
+  private destroyCoordinateMap(): void {
+    this.coordinateMarker?.remove();
+    this.coordinateMarker = undefined;
+    this.coordinateMap?.remove();
+    this.coordinateMap = undefined;
+
+    if (typeof window !== 'undefined') {
+      window.clearTimeout(this.coordinateMapTimerId);
+      this.coordinateMapTimerId = undefined;
+    }
   }
 
   private hasActiveUploads(): boolean {
