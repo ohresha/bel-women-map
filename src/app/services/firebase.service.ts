@@ -33,6 +33,7 @@ export class FirebaseService {
     runInInjectionContext(this.injector, () => authState(this.auth))
   );
   readonly isAuthenticated$: Observable<boolean> = this.user$.pipe(map((user) => !!user));
+  readonly isAdmin$: Observable<boolean> = this.user$.pipe(map((user) => this.isAdminUser(user)));
 
   async login(email: string, password: string): Promise<User> {
     const credentials = await runInInjectionContext(this.injector, () =>
@@ -40,7 +41,7 @@ export class FirebaseService {
     );
     const userEmail = credentials.user.email?.toLowerCase() ?? '';
 
-    if (this.allowedAdminEmails.length > 0 && !this.allowedAdminEmails.includes(userEmail)) {
+    if (!this.isAdminEmail(userEmail)) {
       await runInInjectionContext(this.injector, () => signOut(this.auth));
       throw new Error('У этой учетной записи нет прав администратора.');
     }
@@ -50,6 +51,11 @@ export class FirebaseService {
 
   logout(): Promise<void> {
     return runInInjectionContext(this.injector, () => signOut(this.auth));
+  }
+
+  isAdminUser(user: User | null): boolean {
+    const userEmail = user?.email?.toLowerCase() ?? '';
+    return this.isAdminEmail(userEmail);
   }
 
   async getWomenData(): Promise<WomenDataPayload> {
@@ -166,6 +172,10 @@ export class FirebaseService {
     }
 
     return normalizedText;
+  }
+
+  private isAdminEmail(email: string): boolean {
+    return this.allowedAdminEmails.length === 0 || this.allowedAdminEmails.includes(email);
   }
 
 }

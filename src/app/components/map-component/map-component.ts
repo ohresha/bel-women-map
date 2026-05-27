@@ -1,7 +1,7 @@
 import { NgFor, NgIf } from '@angular/common';
 import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, HostListener, NgZone, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import * as L from 'leaflet';
 import 'leaflet.markercluster';
 import { MapDataService, MapFilters, WomanDetails, WomanProfile } from '../../services/map-data.service';
@@ -34,7 +34,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   regions: any;
   categories: any;
 
-  constructor( private readonly mapData: MapDataService, private readonly zone: NgZone, private readonly cdr: ChangeDetectorRef, private http: HttpClient ) {
+  constructor(
+    private readonly mapData: MapDataService,
+    private readonly zone: NgZone,
+    private readonly cdr: ChangeDetectorRef,
+    private readonly http: HttpClient,
+    private readonly router: Router
+  ) {
     this.regions = this.mapData.getRegions();
     this.categories = this.mapData.getCategories();
   }
@@ -105,6 +111,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.isPreviewOpen = false;
     this.selectedWoman = undefined;
     this.activeImageIndex = 0;
+  }
+
+  goHome(): void {
+    void this.router.navigate(['/']);
   }
 
   toggleRegion(region: string): void {

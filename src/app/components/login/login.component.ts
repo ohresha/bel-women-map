@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { FirebaseError } from 'firebase/app';
+import { take } from 'rxjs';
 import { FirebaseService } from '../../services/firebase.service';
 
 @Component({
@@ -22,6 +23,14 @@ export class LoginComponent {
 
   protected isSubmitting = false;
   protected authError = '';
+
+  constructor() {
+    this.firebaseService.isAdmin$.pipe(take(1)).subscribe((isAdmin) => {
+      if (isAdmin) {
+        void this.router.navigate(['/admin']);
+      }
+    });
+  }
 
   async submit(): Promise<void> {
     if (this.form.invalid) {

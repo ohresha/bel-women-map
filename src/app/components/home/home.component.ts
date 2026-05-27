@@ -1,13 +1,19 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FirebaseService } from '../../services/firebase.service';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [AsyncPipe, RouterLink],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
 export class HomeComponent {
+  private readonly firebaseService = inject(FirebaseService);
+
+  readonly isAdmin$ = this.firebaseService.isAdmin$;
+
   images = [
     { id: 1, src: 'assets/homepage_women/vera_kharujaya.jpg', alt: 'Вера Хоружая' },
     { id: 2, src: 'assets/homepage_women/larisa_aleksandrauskaja.jpg', alt: 'Лариса Александраускaя' },

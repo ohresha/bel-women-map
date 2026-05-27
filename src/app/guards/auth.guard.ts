@@ -7,8 +7,8 @@ export const authGuard: CanActivateFn = () => {
   const firebaseService = inject(FirebaseService);
   const router = inject(Router);
 
-  return firebaseService.user$.pipe(
+  return firebaseService.isAdmin$.pipe(
     take(1),
-    map((user) => user ? true : router.createUrlTree(['/login']))
+    map((isAdmin) => isAdmin ? true : router.createUrlTree(['/login']))
   );
 };

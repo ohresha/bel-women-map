@@ -3,9 +3,24 @@
     <div #mapContainer class="map-frame"></div>
   </section>
 
-  <button #filtersToggle class="filter-toggle" type="button" (click)="toggleFilters(); $event.stopPropagation()">
-    Фильтры
-  </button>
+  <div class="map-controls" aria-label="Основные элементы управления картой">
+    <button
+      class="map-control map-control--home"
+      type="button"
+      aria-label="Вернуться на главную"
+      (click)="goHome()">
+      <span class="map-control__label">На главную</span>
+    </button>
+
+    <button
+      #filtersToggle
+      class="map-control filter-toggle"
+      type="button"
+      aria-label="Открыть фильтры"
+      (click)="toggleFilters(); $event.stopPropagation()">
+      <span class="map-control__label">Фильтры</span>
+    </button>
+  </div>
 
   <aside #filtersPanel class="sidebar" [class.is-open]="isFiltersOpen">
     <button class="sidebar__close" type="button" (click)="closeFilters()">×</button>
