@@ -547,7 +547,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private getMarkerPhotoSrc(woman: WomanProfile): string {
     const details = this.detailsCache.get(woman.id);
     const candidate =
-      details?.previewImages?.[0] ??
+      details?.heroImage ??
       woman.images?.[0] ??
       'assets/stockWoman.webp';
     return candidate || 'assets/stockWoman.webp';

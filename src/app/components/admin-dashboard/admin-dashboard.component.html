@@ -331,78 +331,8 @@
               <section class="image-group">
                 <div class="image-group__head">
                   <div>
-                    <h4>Превью</h4>
-                    <p>Изображения в карточке предпросмотра</p>
-                  </div>
-                </div>
-
-                <div class="array-list" formArrayName="images">
-                  <div class="image-array-row" *ngFor="let control of imagesArray.controls; let i = index; trackBy: trackByControl">
-                    <div class="image-field">
-                      <div class="image-field__top">
-                        <span class="image-field__label">Изображение {{ i + 1 }}</span>
-
-                        <div class="input-mode-toggle" role="tablist" [attr.aria-label]="'Режим изображения профиля ' + (i + 1)">
-                          <button
-                            class="input-mode-toggle__btn"
-                            type="button"
-                            [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('images', i)) === 'url'"
-                            (click)="setImageInputMode(getFieldKey('images', i), 'url')">
-                            Ссылка
-                          </button>
-                          <button
-                            class="input-mode-toggle__btn"
-                            type="button"
-                            [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('images', i)) === 'upload'"
-                            (click)="setImageInputMode(getFieldKey('images', i), 'upload')">
-                            Загрузить файл
-                          </button>
-                        </div>
-                      </div>
-
-                      <div class="image-field__body">
-                        <input
-                          *ngIf="getImageInputMode(getFieldKey('images', i)) === 'url'; else imageFileInput"
-                          [formControlName]="i"
-                          type="text"
-                          placeholder="assets/stockWoman.webp" />
-
-                        <ng-template #imageFileInput>
-                          <div class="upload-box">
-                            <label class="file-picker">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                (change)="uploadImageForControl($event, control, getFieldKey('images', i))" />
-                              <span class="file-picker__label">Выбрать файл</span>
-                            </label>
-                            <span class="upload-status" *ngIf="isImageUploading(getFieldKey('images', i))">Загрузка...</span>
-                            <span class="upload-error" *ngIf="getUploadError(getFieldKey('images', i))">
-                              {{ getUploadError(getFieldKey('images', i)) }}
-                            </span>
-                          </div>
-                        </ng-template>
-
-                        <div class="image-preview" *ngIf="getImagePreview(control.value) as imagePreview">
-                          <img [src]="imagePreview" [alt]="'Предпросмотр изображения профиля ' + (i + 1)" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <button class="icon-btn" type="button" (click)="removeImage(i)">×</button>
-                  </div>
-                </div>
-
-                <div class="image-group__footer">
-                  <button class="btn btn--soft" type="button" (click)="addImage()">Добавить изображение</button>
-                </div>
-              </section>
-
-              <section class="image-group">
-                <div class="image-group__head">
-                  <div>
-                    <h4>Галерея</h4>
-                    <p>Галерея изображений на странице подробностей </p>
+                    <h4>Галерея страницы подробностей</h4>
+                    <p>Здесь загружаются фотографии для детальной страницы. Первые три автоматически используются в карточке.</p>
                   </div>
                 </div>
 
@@ -569,16 +499,25 @@
             </ng-template>
           </div>
 
-          <div class="form-actions">
+          <div class="form-actions form-actions--inline">
             <button class="btn btn--soft" type="button" (click)="startCreateRecord()">Очистить форму</button>
-            <button class="btn" type="submit" [disabled]="form.invalid || isLoading() || isSaving() || hasUploadingImages()">
-              {{ isSaving() ? 'Сохраняем...' : 'Сохранить изменения' }}
-            </button>
           </div>
         </form>
+
+       
       </section>
     </div>
   </section>
+
+  <div class="floating-save">
+    <button
+      class="btn floating-save__btn"
+      type="button"
+      (click)="save()"
+      [disabled]="form.invalid || isLoading() || isSaving() || hasUploadingImages()">
+      {{ isSaving() ? 'Сохраняем...' : 'Сохранить изменения' }}
+    </button>
+  </div>
 
   <div
     class="map-picker-modal"

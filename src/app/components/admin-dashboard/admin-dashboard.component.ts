@@ -155,6 +155,10 @@ export class AdminDashboardComponent {
     return this.form.controls.previewImages;
   }
 
+  get shortCardImagesPreview(): FormControl<string>[] {
+    return this.previewImagesArray.controls.slice(0, 3);
+  }
+
   get biographyArray(): FormArray<BiographySectionForm> {
     return this.form.controls.fullBiography;
   }
@@ -531,8 +535,9 @@ export class AdminDashboardComponent {
   private buildRecordFromForm(): WomanRecord {
     const rawValue = this.form.getRawValue();
     const categories = this.normalizeStringList(rawValue.categories);
-    const images = this.normalizeStringList(rawValue.images);
-    const previewImages = this.normalizeStringList(rawValue.previewImages);
+    const heroImage = rawValue.heroImage.trim();
+    const detailedGalleryImages = this.normalizeStringList(rawValue.previewImages);
+    const shortCardImages = detailedGalleryImages.slice(0, 3);
     const coordinates = rawValue.coordinates.map((value) => Number(value)) as [number, number];
 
     return {
@@ -546,9 +551,9 @@ export class AdminDashboardComponent {
       shortInfo: rawValue.shortInfo.trim(),
       coordinates,
       categories,
-      images: images.length > 0 ? images : [rawValue.heroImage.trim()],
-      heroImage: rawValue.heroImage.trim(),
-      previewImages: previewImages.length > 0 ? previewImages : [rawValue.heroImage.trim()],
+      images: shortCardImages.length > 0 ? shortCardImages : [heroImage],
+      heroImage,
+      previewImages: detailedGalleryImages.length > 0 ? detailedGalleryImages : [heroImage],
       fullBiography: rawValue.fullBiography.map((section) => this.mapBiographySection(section))
     };
   }

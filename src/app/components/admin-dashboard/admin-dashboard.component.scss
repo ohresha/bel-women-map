@@ -498,6 +498,38 @@ textarea {
   padding-top: 6px;
 }
 
+.image-group__empty {
+  margin: 0;
+  color: $color-muted;
+  line-height: 1.6;
+}
+
+.image-derived-preview {
+  display: grid;
+  gap: 14px;
+
+  @media (min-width: 760px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.image-derived-preview__item {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid rgba($color-primary, 0.1);
+  background: linear-gradient(165deg, rgba($color-surface, 0.92), rgba($color-bg-light, 0.88));
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba($color-primary-dark, 0.82);
+  }
+}
+
 .image-field {
   display: grid;
   gap: 12px;
@@ -732,6 +764,29 @@ textarea {
   border: 1px solid rgba($color-accent, 0.14);
 }
 
+.form-actions--inline {
+  justify-content: flex-start;
+}
+
+.floating-save {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1100;
+  pointer-events: none;
+}
+
+.floating-save__btn {
+  min-width: 220px;
+  min-height: 56px;
+  padding-inline: 24px;
+  border-radius: 20px;
+  box-shadow:
+    0 20px 40px rgba($color-text-main, 0.18),
+    0 1px 0 rgba($color-surface, 0.18) inset;
+  pointer-events: auto;
+}
+
 .map-picker-modal {
   position: fixed;
   inset: 0;
@@ -924,6 +979,18 @@ textarea {
 
   .map-picker-stat {
     flex: 1 1 100%;
+  }
+
+  .floating-save {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+  }
+
+  .floating-save__btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
   }
 
   .coordinate-picker__row {
