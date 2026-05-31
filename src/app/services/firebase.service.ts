@@ -4,6 +4,7 @@ import {
   Database,
   get,
   ref,
+  remove,
   set
 } from '@angular/fire/database';
 import { defer, map, Observable } from 'rxjs';
@@ -69,26 +70,23 @@ export class FirebaseService {
   }
 
   async saveWomanRecord(record: WomanRecord, originalId?: string | null): Promise<void> {
-    const data = await this.getWomenData();
     const profile = this.toProfile(record);
     const details = this.toDetails(record);
-    const lookupId = originalId?.trim() || record.id;
-
-    let profileIndex = data.profiles.findIndex((item) => item.id === lookupId);
-    let detailsIndex = data.details.findIndex((item) => item.id === lookupId);
-
-    if (profileIndex === -1) {
-      profileIndex = data.profiles.length;
-    }
-
-    if (detailsIndex === -1) {
-      detailsIndex = data.details.length;
-    }
+    const normalizedOriginalId = originalId?.trim() || null;
+    const targetProfileRef = ref(this.database, `/profiles/${record.id}`);
+    const targetDetailsRef = ref(this.database, `/details/${record.id}`);
 
     await Promise.all([
-      runInInjectionContext(this.injector, () => set(ref(this.database, `/profiles/${profileIndex}`), profile)),
-      runInInjectionContext(this.injector, () => set(ref(this.database, `/details/${detailsIndex}`), details))
+      runInInjectionContext(this.injector, () => set(targetProfileRef, profile)),
+      runInInjectionContext(this.injector, () => set(targetDetailsRef, details))
     ]);
+
+    if (normalizedOriginalId && normalizedOriginalId !== record.id) {
+      await Promise.all([
+        runInInjectionContext(this.injector, () => remove(ref(this.database, `/profiles/${normalizedOriginalId}`))),
+        runInInjectionContext(this.injector, () => remove(ref(this.database, `/details/${normalizedOriginalId}`)))
+      ]);
+    }
   }
 
   private normalizeArray<T>(value: unknown): T[] {

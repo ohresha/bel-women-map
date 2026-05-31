@@ -74,8 +74,7 @@
         <div class="gallery" *ngIf="woman.images.length as total">
           <div class="gallery__viewport" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event, total)">
             <div class="gallery__track"
-              [style.transform]="'translateX(-' + activeImageIndex * 100 + '%)'"
-              [style.width.%]="total * 100">
+              [style.transform]="'translateX(-' + activeImageIndex * 100 + '%)'">
               <img *ngFor="let image of woman.images; trackBy: trackByImage"
                 [src]="image" [alt]="woman.name" />
             </div>

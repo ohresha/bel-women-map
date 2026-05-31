@@ -35,7 +35,7 @@ export class MapDataService {
 
   getAllWomenRecords(): Observable<WomanRecord[]> {
     return this.onlineDataService.getData().pipe(
-      map((data) => this.mergeLocalData(data as DataStructure)),
+      map((data) => this.mergeLocalData(this.normalizeDataStructure(data))),
       switchMap((records) => records.length > 0 ? of(records) : this.getLocalWomenRecords()),
       catchError(() => this.getLocalWomenRecords())
     );
@@ -109,6 +109,36 @@ export class MapDataService {
         fullBiography: details?.fullBiography || []
       };
     });
+  }
+
+  private normalizeDataStructure(value: unknown): DataStructure {
+    if (!value || typeof value !== 'object') {
+      return { profiles: [], details: [] };
+    }
+
+    const data = value as {
+      profiles?: unknown;
+      details?: unknown;
+    };
+
+    return {
+      profiles: this.normalizeArray<WomanProfile>(data.profiles),
+      details: this.normalizeArray<WomanDetails>(data.details)
+    };
+  }
+
+  private normalizeArray<T>(value: unknown): T[] {
+    if (Array.isArray(value)) {
+      return value.filter((item): item is T => !!item && typeof item === 'object');
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.values(value as Record<string, T>).filter(
+        (item): item is T => !!item && typeof item === 'object'
+      );
+    }
+
+    return [];
   }
 
   private toProfile(record: WomanRecord): WomanProfile {

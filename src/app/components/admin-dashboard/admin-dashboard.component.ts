@@ -25,6 +25,7 @@ type BiographySectionForm = FormGroup<{
   image: FormControl<string>;
 }>;
 
+// Validates that birth year <= death year
 const YEARS_ORDER_VALIDATOR: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const birth = Number(control.get('birth')?.value);
   const deathValue = control.get('death')?.value;
@@ -34,11 +35,7 @@ const YEARS_ORDER_VALIDATOR: ValidatorFn = (control: AbstractControl): Validatio
   }
 
   const death = Number(deathValue);
-  if (!Number.isFinite(death)) {
-    return null;
-  }
-
-  return birth <= death ? null : { yearsOrder: true };
+  return !Number.isFinite(death) || birth <= death ? null : { yearsOrder: true };
 };
 
 @Component({
@@ -75,6 +72,7 @@ export class AdminDashboardComponent {
   readonly uploadErrors = signal<Record<string, string>>({});
   readonly isCoordinatePickerOpen = signal(false);
   readonly draftCoordinates = signal<[number, number] | null>(null);
+
   readonly belarusRegions = [
     'Брестская область',
     'Витебская область',
@@ -91,22 +89,23 @@ export class AdminDashboardComponent {
     'Просвещение',
     'Политика'
   ];
-  readonly centuries = Array.from({ length: 12 }, (_, index) => `${index + 10} век`);
+  readonly centuries = Array.from({ length: 12 }, (_, i) => `${i + 10} век`);
+
   readonly selectedRecord = computed(() =>
-    this.records().find((record) => record.id === this.selectedId()) ?? null
+    this.records().find((r) => r.id === this.selectedId()) ?? null
   );
   readonly filteredRecords = computed(() => {
     const query = this.searchQuery().trim().toLocaleLowerCase('ru');
-
-    if (!query) {
-      return this.records();
-    }
-
-    return this.records().filter((record) => record.name.toLocaleLowerCase('ru').includes(query));
+    return query
+      ? this.records().filter((r) => r.name.toLocaleLowerCase('ru').includes(query))
+      : this.records();
   });
 
+  // FIX: removed Validators.required from disabled `id` control —
+  // Angular still marks the form invalid when a disabled control fails required
+  // validation, even though the user cannot interact with it.
   readonly form = this.fb.group({
-    id: this.fb.nonNullable.control({ value: '', disabled: true }, [Validators.required]),
+    id: this.fb.nonNullable.control({ value: '', disabled: true }),
     name: this.fb.nonNullable.control('', [Validators.required]),
     birth: this.fb.control<number | null>(null, [Validators.required]),
     death: this.fb.control<number | null>(null),
@@ -139,6 +138,8 @@ export class AdminDashboardComponent {
     this.destroyCoordinateMap();
   }
 
+  // ─── FormArray getters ────────────────────────────────────────────────────
+
   get coordinatesArray(): FormArray<FormControl<number | null>> {
     return this.form.controls.coordinates;
   }
@@ -163,21 +164,23 @@ export class AdminDashboardComponent {
     return this.form.controls.fullBiography;
   }
 
+  // ─── Auth ─────────────────────────────────────────────────────────────────
+
   async logout(): Promise<void> {
     await this.firebaseService.logout();
     await this.router.navigateByUrl('/login');
   }
 
+  // ─── Coordinate picker ────────────────────────────────────────────────────
+
   openCoordinatePicker(): void {
-    const currentCoordinates = this.getCurrentCoordinates();
-    this.draftCoordinates.set(currentCoordinates);
+    const coords = this.getCurrentCoordinates();
+    this.draftCoordinates.set(coords);
     this.isCoordinatePickerOpen.set(true);
 
     if (typeof window !== 'undefined') {
       window.clearTimeout(this.coordinateMapTimerId);
-      this.coordinateMapTimerId = window.setTimeout(() => {
-        this.initializeCoordinateMap(currentCoordinates);
-      }, 0);
+      this.coordinateMapTimerId = window.setTimeout(() => this.initializeCoordinateMap(coords), 0);
     }
   }
 
@@ -188,24 +191,49 @@ export class AdminDashboardComponent {
 
   confirmCoordinateSelection(): void {
     const coordinates = this.draftCoordinates();
-    if (!coordinates) {
-      return;
-    }
+    if (!coordinates) return;
 
-    const [lat, lng] = coordinates.map((value) => Number(value.toFixed(6))) as [number, number];
-    this.form.patchValue({
-      coordinates: [lat, lng]
-    });
-    this.coordinatesArray.controls.forEach((control) => {
-      control.markAsDirty();
-      control.markAsTouched();
+    const [lat, lng] = coordinates.map((v) => Number(v.toFixed(6))) as [number, number];
+    this.form.patchValue({ coordinates: [lat, lng] });
+    this.coordinatesArray.controls.forEach((ctrl) => {
+      ctrl.markAsDirty();
+      ctrl.markAsTouched();
     });
     this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
     this.setFeedback('Координаты обновлены по выбранной точке на карте.', 'success');
     this.closeCoordinatePicker();
   }
 
+  // ─── Save / select / create ───────────────────────────────────────────────
+
   async save(): Promise<void> {
+    console.log('form.invalid:', this.form.invalid);
+  console.log('form.status:', this.form.status);
+  
+  const logInvalid = (control: AbstractControl, path = 'form') => {
+    if (control instanceof FormGroup || control instanceof FormArray) {
+      Object.entries((control as any).controls).forEach(([key, child]) => {
+        logInvalid(child as AbstractControl, `${path}.${key}`);
+      });
+    }
+    if (control.invalid) {
+      console.warn(`INVALID: ${path}`, {
+        status: control.status,
+        errors: control.errors,
+        value: control.value
+      });
+    }
+  };
+  logInvalid(this.form);
+    
+    
+    
+    
+    
+    
+    
+    
+    
     if (this.hasActiveUploads()) {
       this.setFeedback('Дождитесь завершения загрузки изображений, прежде чем сохранять запись.', 'error');
       return;
@@ -213,6 +241,7 @@ export class AdminDashboardComponent {
 
     if (this.form.invalid || this.isLoading() || this.isSaving()) {
       this.form.markAllAsTouched();
+      this.setFeedback('Проверьте обязательные поля перед сохранением.', 'error');
       return;
     }
 
@@ -225,15 +254,13 @@ export class AdminDashboardComponent {
       await this.firebaseService.saveWomanRecord(record, originalId);
 
       const nextRecords = [...this.records()];
-      const existingIndex = nextRecords.findIndex((item) => item.id === (originalId ?? record.id));
+      const existingIndex = nextRecords.findIndex((r) => r.id === (originalId ?? record.id));
 
-      if (existingIndex >= 0) {
-        nextRecords[existingIndex] = record;
-      } else {
-        nextRecords.push(record);
-      }
+      existingIndex >= 0
+        ? (nextRecords[existingIndex] = record)
+        : nextRecords.push(record);
 
-      nextRecords.sort((left, right) => left.name.localeCompare(right.name, 'ru'));
+      nextRecords.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
       this.records.set(nextRecords);
       this.selectedId.set(record.id);
       this.editingSourceId.set(record.id);
@@ -248,10 +275,8 @@ export class AdminDashboardComponent {
   }
 
   selectRecord(recordId: string): void {
-    const record = this.records().find((item) => item.id === recordId);
-    if (!record) {
-      return;
-    }
+    const record = this.records().find((r) => r.id === recordId);
+    if (!record) return;
 
     this.selectedId.set(record.id);
     this.editingSourceId.set(record.id);
@@ -270,30 +295,24 @@ export class AdminDashboardComponent {
     this.setFeedback('Создайте новую запись и сохраните её в обе ветки базы.', 'success');
   }
 
+  // ─── Categories ───────────────────────────────────────────────────────────
+
   addCategory(value = ''): void {
-    const normalizedValue = value.trim();
+    const v = value.trim();
+    if (!v || this.categoriesArray.value.includes(v)) return;
 
-    if (!normalizedValue || this.categoriesArray.value.includes(normalizedValue)) {
-      return;
-    }
-
-    this.categoriesArray.push(this.fb.nonNullable.control(normalizedValue));
-    this.categoriesArray.markAsDirty();
-    this.categoriesArray.markAsTouched();
-    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+    this.categoriesArray.push(this.fb.nonNullable.control(v));
+    this.markArrayDirty(this.categoriesArray);
   }
 
   removeCategory(index: number): void {
     this.categoriesArray.removeAt(index);
-    this.categoriesArray.markAsDirty();
-    this.categoriesArray.markAsTouched();
-    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+    this.markArrayDirty(this.categoriesArray);
   }
 
   addCategoryFromSelect(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    const nextValue = select.value;
-    this.addCategory(nextValue);
+    this.addCategory(select.value);
     select.value = '';
   }
 
@@ -301,15 +320,15 @@ export class AdminDashboardComponent {
     return this.categoriesArray.value.includes(category);
   }
 
+  // ─── Image arrays ─────────────────────────────────────────────────────────
+
   addImage(value = ''): void {
     this.imagesArray.push(this.fb.nonNullable.control(value, [Validators.required]));
   }
 
   removeImage(index: number): void {
     this.imagesArray.removeAt(index);
-    if (this.imagesArray.length === 0) {
-      this.addImage();
-    }
+    if (this.imagesArray.length === 0) this.addImage();
   }
 
   addPreviewImage(value = ''): void {
@@ -318,10 +337,10 @@ export class AdminDashboardComponent {
 
   removePreviewImage(index: number): void {
     this.previewImagesArray.removeAt(index);
-    if (this.previewImagesArray.length === 0) {
-      this.addPreviewImage();
-    }
+    if (this.previewImagesArray.length === 0) this.addPreviewImage();
   }
+
+  // ─── Biography ────────────────────────────────────────────────────────────
 
   addBiographySection(block?: BiographyBlock): void {
     this.biographyArray.push(this.createBiographyGroup(block));
@@ -329,13 +348,13 @@ export class AdminDashboardComponent {
 
   removeBiographySection(index: number): void {
     this.biographyArray.removeAt(index);
-    if (this.biographyArray.length === 0) {
-      this.addBiographySection();
-    }
+    if (this.biographyArray.length === 0) this.addBiographySection();
   }
 
+  // ─── UI helpers ───────────────────────────────────────────────────────────
+
   toggleMobileList(): void {
-    this.isMobileListOpen.set(!this.isMobileListOpen());
+    this.isMobileListOpen.update((v) => !v);
   }
 
   updateSearch(query: string): void {
@@ -354,15 +373,28 @@ export class AdminDashboardComponent {
     return control;
   }
 
+  controlHasError(control: AbstractControl | null, errorCode: string): boolean {
+    return !!control && control.hasError(errorCode) && (control.dirty || control.touched);
+  }
+
+  sanitizeYearInput(controlName: 'birth' | 'death', event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digitsOnly = input.value.replace(/\D+/g, '').slice(0, 4);
+    input.value = digitsOnly;
+    this.form.controls[controlName].setValue(digitsOnly ? Number(digitsOnly) : null);
+    this.form.controls[controlName].markAsDirty();
+    this.form.controls[controlName].markAsTouched();
+    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+  }
+
+  // ─── Image upload / input mode ────────────────────────────────────────────
+
   getImageInputMode(fieldKey: string): 'url' | 'upload' {
     return this.imageInputModes()[fieldKey] ?? 'url';
   }
 
   setImageInputMode(fieldKey: string, mode: 'url' | 'upload'): void {
-    this.imageInputModes.update((state) => ({
-      ...state,
-      [fieldKey]: mode
-    }));
+    this.imageInputModes.update((s) => ({ ...s, [fieldKey]: mode }));
     this.clearUploadError(fieldKey);
   }
 
@@ -379,25 +411,18 @@ export class AdminDashboardComponent {
   }
 
   getImagePreview(value: string | null | undefined): string | null {
-    const normalizedValue = value?.trim() ?? '';
-    return normalizedValue ? normalizedValue : null;
+    const v = value?.trim() ?? '';
+    return v || null;
   }
 
   getFieldKey(section: 'images' | 'previewImages' | 'fullBiography', index: number): string {
-    if (section === 'fullBiography') {
-      return `fullBiography:${index}:image`;
-    }
-
-    return `${section}:${index}`;
+    return section === 'fullBiography' ? `fullBiography:${index}:image` : `${section}:${index}`;
   }
 
   uploadImageForControl(event: Event, control: FormControl<string>, fieldKey: string): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     this.setUploadingState(fieldKey, true);
     this.clearUploadError(fieldKey);
@@ -425,19 +450,7 @@ export class AdminDashboardComponent {
       });
   }
 
-  controlHasError(control: AbstractControl | null, errorCode: string): boolean {
-    return !!control && control.hasError(errorCode) && (control.dirty || control.touched);
-  }
-
-  sanitizeYearInput(controlName: 'birth' | 'death', event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const digitsOnly = input.value.replace(/\D+/g, '').slice(0, 4);
-    input.value = digitsOnly;
-    this.form.controls[controlName].setValue(digitsOnly ? Number(digitsOnly) : null);
-    this.form.controls[controlName].markAsDirty();
-    this.form.controls[controlName].markAsTouched();
-    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
-  }
+  // ─── Private: data loading ────────────────────────────────────────────────
 
   private async loadRecords(): Promise<void> {
     this.isLoading.set(true);
@@ -445,15 +458,12 @@ export class AdminDashboardComponent {
     try {
       const data = await this.firebaseService.getWomenData();
       const mergedRecords = this.mergeWomenData(data.profiles, data.details)
-        .sort((left, right) => left.name.localeCompare(right.name, 'ru'));
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 
       this.records.set(mergedRecords);
-
-      if (mergedRecords.length > 0) {
-        this.selectRecord(mergedRecords[0].id);
-      } else {
-        this.startCreateRecord();
-      }
+      mergedRecords.length > 0
+        ? this.selectRecord(mergedRecords[0].id)
+        : this.startCreateRecord();
     } catch (error) {
       console.error(error);
       this.records.set([]);
@@ -464,27 +474,30 @@ export class AdminDashboardComponent {
     }
   }
 
+  // ─── Private: form ────────────────────────────────────────────────────────
+
   private fillForm(record?: WomanRecord): void {
-    const nextRecord = record ?? this.createEmptyRecord();
+    const r = record ?? this.createEmptyRecord();
     this.closeCoordinatePicker();
 
     this.form.reset({
-      id: nextRecord.id,
-      name: nextRecord.name,
-      birth: nextRecord.birth,
-      death: nextRecord.death,
-      region: nextRecord.region,
-      city: nextRecord.city,
-      century: nextRecord.century,
-      shortInfo: nextRecord.shortInfo,
-      heroImage: nextRecord.heroImage
+      id: r.id,
+      name: r.name,
+      birth: r.birth,
+      death: r.death,
+      region: r.region,
+      city: r.city,
+      century: r.century,
+      shortInfo: r.shortInfo,
+      heroImage: r.heroImage
     });
 
-    this.form.setControl('categories', this.createCategoriesArray(nextRecord.categories));
-    this.form.setControl('images', this.createStringArray(nextRecord.images, ['assets/stockWoman.webp']));
-    this.form.setControl('previewImages', this.createStringArray(nextRecord.previewImages, ['assets/stockWoman.webp']));
-    this.form.setControl('coordinates', this.createCoordinatesArray(nextRecord.coordinates));
-    this.form.setControl('fullBiography', this.createBiographyArray(nextRecord.fullBiography));
+    this.form.setControl('categories', this.createCategoriesArray(r.categories));
+    this.form.setControl('images', this.createStringArray(r.images, ['assets/stockWoman.webp']));
+    this.form.setControl('previewImages', this.createStringArray(r.previewImages, ['assets/stockWoman.webp']));
+    this.form.setControl('coordinates', this.createCoordinatesArray(r.coordinates));
+    this.form.setControl('fullBiography', this.createBiographyArray(r.fullBiography));
+
     this.imageInputModes.set({});
     this.uploadingStates.set({});
     this.uploadErrors.set({});
@@ -492,93 +505,76 @@ export class AdminDashboardComponent {
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
-    this.formRenderKey.update((value) => value + 1);
+    this.formRenderKey.update((v) => v + 1);
   }
 
   private createStringArray(values: string[], fallback: string[]): FormArray<FormControl<string>> {
-    const normalizedValues = values.length > 0 ? values : fallback;
+    const normalized = values.length > 0 ? values : fallback;
     return this.fb.array(
-      normalizedValues.map((value) => this.fb.nonNullable.control(value, [Validators.required]))
+      normalized.map((v) => this.fb.nonNullable.control(v, [Validators.required]))
     );
   }
 
   private createCategoriesArray(values: string[]): FormArray<FormControl<string>> {
-    const normalizedValues = this.normalizeStringList(values)
-      .filter((value, index, array) => array.indexOf(value) === index);
-
-    return this.fb.array(
-      normalizedValues.map((value) => this.fb.nonNullable.control(value))
-    );
+    const unique = this.normalizeStringList(values).filter((v, i, arr) => arr.indexOf(v) === i);
+    return this.fb.array(unique.map((v) => this.fb.nonNullable.control(v)));
   }
 
   private createCoordinatesArray(values: [number, number]): FormArray<FormControl<number | null>> {
     return this.fb.array(
-      values.map((value) => this.fb.control<number | null>(value, [Validators.required]))
+      values.map((v) => this.fb.control<number | null>(v, [Validators.required]))
     );
   }
 
   private createBiographyArray(blocks: BiographyBlock[]): FormArray<BiographySectionForm> {
-    const normalizedBlocks = blocks.length > 0 ? blocks : [undefined];
-    return this.fb.array(
-      normalizedBlocks.map((block) => this.createBiographyGroup(block))
-    );
+    const normalized = blocks.length > 0 ? blocks : [undefined];
+    return this.fb.array(normalized.map((b) => this.createBiographyGroup(b)));
   }
 
   private createBiographyGroup(block?: BiographyBlock): BiographySectionForm {
     return this.fb.group({
-      title: this.fb.nonNullable.control(this.extractBiographyTitle(block), [Validators.required]),
-      text: this.fb.nonNullable.control(this.extractBiographyText(block), [Validators.required]),
-      image: this.fb.nonNullable.control(this.extractBiographyImage(block))
+      title: this.fb.nonNullable.control(block?.type === 'text' ? block.title ?? '' : '', [Validators.required]),
+      text: this.fb.nonNullable.control(block?.type === 'text' ? block.text ?? '' : '', [Validators.required]),
+      image: this.fb.nonNullable.control(block?.type === 'text' ? block.image ?? '' : '')
     }) as BiographySectionForm;
   }
 
   private buildRecordFromForm(): WomanRecord {
-    const rawValue = this.form.getRawValue();
-    const categories = this.normalizeStringList(rawValue.categories);
-    const heroImage = rawValue.heroImage.trim();
-    const detailedGalleryImages = this.normalizeStringList(rawValue.previewImages);
-    const shortCardImages = detailedGalleryImages.slice(0, 3);
-    const coordinates = rawValue.coordinates.map((value) => Number(value)) as [number, number];
+    const raw = this.form.getRawValue();
+    const categories = this.normalizeStringList(raw.categories);
+    const heroImage = raw.heroImage.trim();
+    const previewImages = this.normalizeStringList(raw.previewImages);
+    const coordinates = raw.coordinates.map(Number) as [number, number];
 
     return {
       id: this.form.controls.id.getRawValue().trim(),
-      name: rawValue.name.trim(),
-      birth: Number(rawValue.birth),
-      death: rawValue.death === null ? null : Number(rawValue.death),
-      region: rawValue.region.trim(),
-      city: rawValue.city.trim(),
-      century: rawValue.century.trim(),
-      shortInfo: rawValue.shortInfo.trim(),
+      name: raw.name.trim(),
+      birth: Number(raw.birth),
+      death: raw.death === null ? null : Number(raw.death),
+      region: raw.region.trim(),
+      city: raw.city.trim(),
+      century: raw.century.trim(),
+      shortInfo: raw.shortInfo.trim(),
       coordinates,
       categories,
-      images: shortCardImages.length > 0 ? shortCardImages : [heroImage],
+      images: previewImages.slice(0, 3).length > 0 ? previewImages.slice(0, 3) : [heroImage],
       heroImage,
-      previewImages: detailedGalleryImages.length > 0 ? detailedGalleryImages : [heroImage],
-      fullBiography: rawValue.fullBiography.map((section) => this.mapBiographySection(section))
-    };
-  }
-
-  private mapBiographySection(section: { title: string; text: string; image: string }): BiographyBlock {
-    const title = section.title.trim();
-    const text = section.text.trim();
-    const image = section.image.trim();
-
-    return {
-      type: 'text',
-      title,
-      text,
-      image
+      previewImages: previewImages.length > 0 ? previewImages : [heroImage],
+      fullBiography: raw.fullBiography.map(({ title, text, image }) => ({
+        type: 'text' as const,
+        title: title.trim(),
+        text: text.trim(),
+        image: image.trim()
+      }))
     };
   }
 
   private normalizeStringList(values: string[]): string[] {
-    return values
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0);
+    return values.map((v) => v.trim()).filter(Boolean);
   }
 
   private mergeWomenData(profiles: WomanProfile[], details: WomanDetails[]): WomanRecord[] {
-    const detailsMap = new Map(details.map((item) => [item.id, item]));
+    const detailsMap = new Map(details.map((d) => [d.id, d]));
     const records = profiles.map((profile) => {
       const detail = detailsMap.get(profile.id);
       return {
@@ -589,24 +585,24 @@ export class AdminDashboardComponent {
       };
     });
 
-    details.forEach((detail) => {
-      if (records.some((record) => record.id === detail.id)) {
-        return;
-      }
-
-      records.push({
-        ...this.createEmptyRecord(),
-        id: detail.id,
-        name: detail.id.replaceAll('_', ' '),
-        heroImage: detail.heroImage,
-        previewImages: detail.previewImages,
-        fullBiography: detail.fullBiography
+    const recordIds = new Set(records.map((r) => r.id));
+    details
+      .filter((d) => !recordIds.has(d.id))
+      .forEach((d) => {
+        records.push({
+          ...this.createEmptyRecord(),
+          id: d.id,
+          name: d.id.replaceAll('_', ' '),
+          heroImage: d.heroImage,
+          previewImages: d.previewImages,
+          fullBiography: d.fullBiography
+        });
       });
-    });
 
     return records;
   }
 
+  // FIX: categories is now [] instead of [''] to avoid empty-string entries
   private createEmptyRecord(): WomanRecord {
     return {
       id: '',
@@ -618,75 +614,24 @@ export class AdminDashboardComponent {
       century: this.centuries[0],
       shortInfo: '',
       coordinates: [53.9, 27.5667],
-      categories: [''],
+      categories: [],
       images: ['assets/stockWoman.webp'],
       heroImage: 'assets/stockWoman.webp',
       previewImages: ['assets/stockWoman.webp'],
-      fullBiography: [
-        {
-          type: 'text',
-          title: '',
-          text: '',
-          image: ''
-        }
-      ]
+      fullBiography: [{ type: 'text', title: '', text: '', image: '' }]
     };
   }
 
-  private extractBiographyTitle(block?: BiographyBlock): string {
-    if (!block) {
-      return '';
-    }
-
-    return block.type === 'text' ? block.title ?? '' : '';
-  }
-
-  private extractBiographyText(block?: BiographyBlock): string {
-    if (!block) {
-      return '';
-    }
-
-    return block.type === 'text' ? block.text ?? '' : '';
-  }
-
-  private extractBiographyImage(block?: BiographyBlock): string {
-    if (!block) {
-      return '';
-    }
-
-    return block.type === 'text' ? block.image ?? '' : '';
-  }
-
-  private buildIdFromName(name: string): string {
-    return name
-      .trim()
-      .replace(/\s+/g, '_')
-      .replace(/[^\p{L}\p{N}_-]/gu, '')
-      .replace(/_+/g, '_');
-  }
-
-  private setFeedback(message: string, type: 'success' | 'error'): void {
-    this.feedbackMessage.set(message);
-    this.feedbackType.set(type);
-  }
+  // ─── Private: coordinate map ──────────────────────────────────────────────
 
   private getCurrentCoordinates(): [number, number] {
-    const rawCoordinates = this.form.getRawValue().coordinates;
-    const lat = Number(rawCoordinates[0]);
-    const lng = Number(rawCoordinates[1]);
-
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      return [lat, lng];
-    }
-
-    return [53.9, 27.5667];
+    const [lat, lng] = this.form.getRawValue().coordinates.map(Number);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : [53.9, 27.5667];
   }
 
   private initializeCoordinateMap(initialCoordinates: [number, number]): void {
     const mapHost = this.coordinatePickerMap?.nativeElement;
-    if (!mapHost) {
-      return;
-    }
+    if (!mapHost) return;
 
     this.destroyCoordinateMap();
 
@@ -703,9 +648,9 @@ export class AdminDashboardComponent {
     }).addTo(this.coordinateMap);
 
     this.coordinateMap.on('click', (event: L.LeafletMouseEvent) => {
-      const nextCoordinates: [number, number] = [event.latlng.lat, event.latlng.lng];
-      this.draftCoordinates.set(nextCoordinates);
-      this.renderCoordinateMarker(nextCoordinates);
+      const coords: [number, number] = [event.latlng.lat, event.latlng.lng];
+      this.draftCoordinates.set(coords);
+      this.renderCoordinateMarker(coords);
     });
 
     this.renderCoordinateMarker(initialCoordinates);
@@ -713,15 +658,16 @@ export class AdminDashboardComponent {
     if (typeof window !== 'undefined') {
       window.setTimeout(() => {
         this.coordinateMap?.invalidateSize();
-        this.coordinateMap?.setView(this.draftCoordinates() ?? initialCoordinates, this.coordinateMap?.getZoom() ?? 7);
+        this.coordinateMap?.setView(
+          this.draftCoordinates() ?? initialCoordinates,
+          this.coordinateMap?.getZoom() ?? 7
+        );
       }, 150);
     }
   }
 
   private renderCoordinateMarker(coordinates: [number, number]): void {
-    if (!this.coordinateMap) {
-      return;
-    }
+    if (!this.coordinateMap) return;
 
     if (!this.coordinateMarker) {
       this.coordinateMarker = L.marker(coordinates, {
@@ -751,33 +697,47 @@ export class AdminDashboardComponent {
     }
   }
 
+  // ─── Private: upload state ────────────────────────────────────────────────
+
   private hasActiveUploads(): boolean {
     return Object.values(this.uploadingStates()).some(Boolean);
   }
 
   private setUploadingState(fieldKey: string, isUploading: boolean): void {
-    this.uploadingStates.update((state) => ({
-      ...state,
-      [fieldKey]: isUploading
-    }));
+    this.uploadingStates.update((s) => ({ ...s, [fieldKey]: isUploading }));
   }
 
   private setUploadError(fieldKey: string, message: string): void {
-    this.uploadErrors.update((state) => ({
-      ...state,
-      [fieldKey]: message
-    }));
+    this.uploadErrors.update((s) => ({ ...s, [fieldKey]: message }));
   }
 
   private clearUploadError(fieldKey: string): void {
-    this.uploadErrors.update((state) => {
-      if (!(fieldKey in state)) {
-        return state;
-      }
-
-      const nextState = { ...state };
-      delete nextState[fieldKey];
-      return nextState;
+    this.uploadErrors.update((s) => {
+      if (!(fieldKey in s)) return s;
+      const next = { ...s };
+      delete next[fieldKey];
+      return next;
     });
+  }
+
+  // ─── Private: misc helpers ────────────────────────────────────────────────
+
+  private buildIdFromName(name: string): string {
+    return name
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/[^\p{L}\p{N}_-]/gu, '')
+      .replace(/_+/g, '_');
+  }
+
+  private setFeedback(message: string, type: 'success' | 'error'): void {
+    this.feedbackMessage.set(message);
+    this.feedbackType.set(type);
+  }
+
+  private markArrayDirty(array: FormArray): void {
+    array.markAsDirty();
+    array.markAsTouched();
+    this.form.updateValueAndValidity({ onlySelf: false, emitEvent: false });
   }
 }
