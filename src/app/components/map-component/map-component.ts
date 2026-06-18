@@ -3,7 +3,8 @@ import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, E
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import * as L from 'leaflet';
-import 'leaflet.markercluster';
+// import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/leaflet.markercluster-src.js';
 import { MapDataService, MapFilters, WomanDetails, WomanProfile } from '../../services/map-data.service';
 import { HttpClient } from '@angular/common/http';
 
@@ -22,7 +23,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('filtersToggle') filtersToggle!: ElementRef<HTMLButtonElement>;
   
   private map?: L.Map;
-  private markersLayer?: L.MarkerClusterGroup;
+  private markersLayer?: any;
   private maskLayer?: L.GeoJSON;
   private bordersLayer?: L.GeoJSON;
   private timerId?: number;
@@ -174,11 +175,43 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  // private initMap(): void {
+  //   this.map = L.map(this.mapContainer.nativeElement, {
+  //     zoomControl: true,
+  //     preferCanvas: true,
+      
+  //   }).setView([53.9, 27.566], 7);
+
+  //   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  //     maxZoom: 18,
+  //     minZoom: 7, 
+  //     attribution: '&copy; OpenStreetMap',
+  //     updateWhenZooming: false,
+  //   }).addTo(this.map);
+
+  //   this.map.createPane('mask');
+  //   const maskPane = this.map.getPane('mask');
+  //   if (maskPane) {
+  //     maskPane.style.pointerEvents = 'none';
+  //     maskPane.style.zIndex = '350';
+  //   }
+
+  //   this.markersLayer = L.markerClusterGroup({
+  //     showCoverageOnHover: false,
+  //     spiderfyOnMaxZoom: true,
+  //     chunkedLoading: true,
+  //     chunkDelay: 40,
+  //     maxClusterRadius: 44,
+  //     iconCreateFunction: (cluster) => this.createClusterIcon(cluster)
+  //   });
+  //   this.markersLayer.addTo(this.map);
+  //   this.addBorders();
+  // }
+
   private initMap(): void {
     this.map = L.map(this.mapContainer.nativeElement, {
       zoomControl: true,
       preferCanvas: true,
-      
     }).setView([53.9, 27.566], 7);
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -195,14 +228,23 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       maskPane.style.zIndex = '350';
     }
 
-    this.markersLayer = L.markerClusterGroup({
+    // === ФИКС ДЛЯ ANGULAR 21 PRODUCTION СБОРКИ ===
+    // Явно проверяем и вызываем конструктор через глобальный контекст или приведение к any
+    const leafletInstance = L as any;
+    if (typeof leafletInstance.markerClusterGroup !== 'function') {
+      console.warn('MarkerClusterGroup не найден в объекте L, пробуем альтернативную инициализацию');
+    }
+
+    this.markersLayer = leafletInstance.markerClusterGroup({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       chunkedLoading: true,
       chunkDelay: 40,
       maxClusterRadius: 44,
-      iconCreateFunction: (cluster) => this.createClusterIcon(cluster)
+      iconCreateFunction: (cluster: any) => this.createClusterIcon(cluster)
     });
+    // =============================================
+
     this.markersLayer.addTo(this.map);
     this.addBorders();
   }
@@ -361,7 +403,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   });
 }
 
-  private createClusterIcon(cluster: L.MarkerCluster): L.DivIcon {
+  private createClusterIcon(cluster: any): L.DivIcon {
   const count = cluster.getChildCount();
   return L.divIcon({
     className: '',
