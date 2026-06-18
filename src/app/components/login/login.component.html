@@ -1,6 +1,5 @@
 <main class="login">
   <section class="card">
-    <div class="card__ornament" aria-hidden="true"></div>
     <p class="card__kicker">Служебный вход</p>
     <h1>Панель администратора</h1>
     <p class="card__lead">
@@ -30,13 +29,13 @@
         }
       </label>
 
-      <button class="submit" type="submit" [disabled]="isSubmitting">
+      <button class="cta" type="submit" [disabled]="isSubmitting" style="height: 50px;">
         {{ isSubmitting ? 'Выполняется вход...' : 'Войти в админ-панель' }}
       </button>
     </form>
 
     <div class="card__footer">
-      <a class="back" routerLink="/">Вернуться на главную</a>
+      <a class="cta cta--outline" routerLink="/">Вернуться на главную</a>
     </div>
   </section>
 </main>

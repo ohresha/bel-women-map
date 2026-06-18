@@ -5,7 +5,8 @@
         <p class="hero__eyebrow">Панель администратора</p>
         <h1>Редактирование и добавление записей</h1>
         <p class="hero__lead">
-          Выберите запись в списке слева, заполните данные и нажмите "Сохранить" для записи в Firebase Realtime Database.
+          Выберите запись в списке слева, заполните данные и нажмите "Сохранить" для записи в
+          Firebase Realtime Database.
         </p>
       </div>
 
@@ -22,45 +23,25 @@
       </div>
 
       <div class="hero__actions">
-        <a class="btn btn--soft" routerLink="/">На главную</a>
-        <button class="btn btn--ghost" type="button" (click)="logout()">Выйти</button>
-        <button class="btn btn--soft btn--new" type="button" (click)="startCreateRecord()">Новая запись</button>
+        <a class="cta cta--outline" routerLink="/">На главную</a>
+        <button class="cta cta--outline" type="button" (click)="logout()">Выйти</button>
+        <button class="cta" type="button" (click)="startCreateRecord()">
+          Новая запись
+        </button>
       </div>
     </header>
 
     <section
       class="feedback"
       *ngIf="feedbackMessage()"
-      [class.feedback--error]="feedbackType() === 'error'">
+      [class.feedback--error]="feedbackType() === 'error'"
+    >
       {{ feedbackMessage() }}
     </section>
 
-    <div class="mobile-picker">
-      <label class="field">
-        <span>Поиск по имени</span>
-        <input
-          type="search"
-          [value]="searchQuery()"
-          (input)="updateSearch(($any($event.target).value))"
-          placeholder="Введите имя для поиска" />
-      </label>
-
-      <label class="field">
-        <span>Быстрый выбор записи</span>
-        <select
-          [value]="selectedId() ?? ''"
-          (change)="selectRecord(($any($event.target).value))">
-          <option value="" disabled>Выберите женщину</option>
-          <option *ngFor="let record of filteredRecords(); trackBy: trackByRecord" [value]="record.id">
-            {{ record.name }}
-          </option>
-        </select>
-      </label>
-
-      <button class="btn btn--soft" type="button" (click)="toggleMobileList()">
-        {{ isMobileListOpen() ? 'Скрыть список' : 'Показать список' }}
-      </button>
-    </div>
+    <button class="cta cta--outline mobile-list-toggle" type="button" (click)="toggleMobileList()">
+      {{ isMobileListOpen() ? 'Скрыть список' : 'Показать список' }}
+    </button>
 
     <div class="dashboard-grid">
       <aside class="sidebar" [class.sidebar--open]="isMobileListOpen()">
@@ -75,8 +56,9 @@
           <input
             type="search"
             [value]="searchQuery()"
-            (input)="updateSearch(($any($event.target).value))"
-            placeholder="Например, Стефания" />
+            (input)="updateSearch($any($event.target).value)"
+            placeholder="Например, Стефания"
+          />
         </label>
 
         <div class="sidebar__list" *ngIf="filteredRecords().length; else emptyList">
@@ -85,7 +67,8 @@
             type="button"
             class="record-card"
             [class.record-card--active]="selectedId() === record.id && !isCreating()"
-            (click)="selectRecord(record.id)">
+            (click)="selectRecord(record.id)"
+          >
             <strong>{{ record.name }}</strong>
             <span>{{ record.region }} • {{ record.city }}</span>
             <small>{{ record.century }}</small>
@@ -96,7 +79,11 @@
           <div class="empty-state">
             <h3>{{ searchQuery() ? 'Ничего не найдено' : 'Записей пока нет' }}</h3>
             <p>
-              {{ searchQuery() ? 'Попробуйте изменить строку поиска.' : 'Создайте первую запись и сохраните её в базу.' }}
+              {{
+                searchQuery()
+                  ? 'Попробуйте изменить строку поиска.'
+                  : 'Создайте первую запись и сохраните её в базу.'
+              }}
             </p>
           </div>
         </ng-template>
@@ -110,12 +97,19 @@
 
           <div class="editor__status">
             <span *ngIf="isLoading()">Загрузка данных...</span>
-            <span *ngIf="!isLoading() && selectedRecord() as current">Выбрана: {{ current.name }}</span>
+            <span *ngIf="!isLoading() && selectedRecord() as current"
+              >Выбрана: {{ current.name }}</span
+            >
             <span *ngIf="!isLoading() && isCreating()">Режим создания новой записи</span>
           </div>
         </div>
 
-        <form class="editor-form" [formGroup]="form" (ngSubmit)="save()" [attr.data-form-render-key]="formRenderKey()">
+        <form
+          class="editor-form"
+          [formGroup]="form"
+          (ngSubmit)="save()"
+          [attr.data-form-render-key]="formRenderKey()"
+        >
           <section class="card">
             <div class="section-title">
               <h3>Основная информация</h3>
@@ -129,7 +123,8 @@
                   type="text"
                   formControlName="id"
                   readonly
-                  placeholder="Евфросиния_Полоцкая" />
+                  placeholder="Евфросиния_Полоцкая"
+                />
               </label>
 
               <label class="field">
@@ -144,7 +139,8 @@
                   inputmode="numeric"
                   maxlength="4"
                   formControlName="birth"
-                  (input)="sanitizeYearInput('birth', $event)" />
+                  (input)="sanitizeYearInput('birth', $event)"
+                />
               </label>
 
               <label class="field">
@@ -154,13 +150,17 @@
                   inputmode="numeric"
                   maxlength="4"
                   formControlName="death"
-                  (input)="sanitizeYearInput('death', $event)" />
+                  (input)="sanitizeYearInput('death', $event)"
+                />
               </label>
 
               <label class="field">
                 <span>Область</span>
                 <select formControlName="region">
-                  <option *ngFor="let region of belarusRegions; let i = index; trackBy: trackByIndex" [value]="region">
+                  <option
+                    *ngFor="let region of belarusRegions; let i = index; trackBy: trackByIndex"
+                    [value]="region"
+                  >
                     {{ region }}
                   </option>
                 </select>
@@ -174,7 +174,10 @@
               <label class="field">
                 <span>Век</span>
                 <select formControlName="century">
-                  <option *ngFor="let century of centuries; let i = index; trackBy: trackByIndex" [value]="century">
+                  <option
+                    *ngFor="let century of centuries; let i = index; trackBy: trackByIndex"
+                    [value]="century"
+                  >
                     {{ century }}
                   </option>
                 </select>
@@ -200,26 +203,41 @@
                   <div class="coordinate-picker__row">
                     <label class="coordinate-picker__input">
                       <span>Широта</span>
-                      <input type="number" step="0.0001" [formControlName]="0" placeholder="53.9000" />
+                      <input
+                        type="number"
+                        step="0.0001"
+                        [formControlName]="0"
+                        placeholder="53.9000"
+                      />
                     </label>
 
                     <label class="coordinate-picker__input">
                       <span>Долгота</span>
-                      <input type="number" step="0.0001" [formControlName]="1" placeholder="27.5667" />
+                      <input
+                        type="number"
+                        step="0.0001"
+                        [formControlName]="1"
+                        placeholder="27.5667"
+                      />
                     </label>
 
-                    <button class="btn btn--map-picker" type="button" (click)="openCoordinatePicker()">
+                    <button
+                      class="cta btn--map-picker"
+                      type="button"
+                      (click)="openCoordinatePicker()"
+                    >
                       <span class="btn__pin" aria-hidden="true"></span>
-                      <span>На карте</span>
+                      <span style="color: white">На карте</span>
                     </button>
                   </div>
 
-                  <p class="coordinate-picker__hint">Укажите точку вручную или выберите её на карте.</p>
+                  <p class="coordinate-picker__hint">
+                    Укажите точку вручную или выберите её на карте.
+                  </p>
                 </div>
               </div>
             </div>
           </section>
-
 
           <section class="card">
             <div class="section-title">
@@ -227,46 +245,53 @@
               <p>Выберите категории для фильтрации</p>
             </div>
             <div class="category-selector">
-                <label class="field field--full">
-                  <span>Добавить категорию</span>
-                  <div class="select-shell select-shell--category">
-                    <select (change)="addCategoryFromSelect($event)">
-                      <option value="">Выберите категорию</option>
-                      <option
-                        *ngFor="let category of categoryOptions; trackBy: trackByIndex"
-                        [value]="category"
-                        [disabled]="isCategorySelected(category)">
-                        {{ category }}
-                      </option>
-                    </select>
-                  </div>
-                </label>
-
-                <div class="category-tags" *ngIf="categoriesArray.controls.length; else noCategories">
-                  <div
-                    class="category-tag"
-                    *ngFor="let control of categoriesArray.controls; let i = index; trackBy: trackByControl">
-                    <span>{{ control.value }}</span>
-                    <button
-                      class="icon-btn icon-btn--tag"
-                      type="button"
-                      (click)="removeCategory(i)"
-                      aria-label="Удалить категорию">
-                      ×
-                    </button>
-                  </div>
+              <label class="field field--full">
+                <span>Добавить категорию</span>
+                <div class="select-shell select-shell--category">
+                  <select (change)="addCategoryFromSelect($event)">
+                    <option value="">Выберите категорию</option>
+                    <option
+                      *ngFor="let category of categoryOptions; trackBy: trackByIndex"
+                      [value]="category"
+                      [disabled]="isCategorySelected(category)"
+                    >
+                      {{ category }}
+                    </option>
+                  </select>
                 </div>
+              </label>
 
-                <ng-template #noCategories>
-                  <p class="category-selector__empty">Категории пока не выбраны.</p>
-                </ng-template>
+              <div class="category-tags" *ngIf="categoriesArray.controls.length; else noCategories">
+                <div
+                  class="category-tag"
+                  *ngFor="
+                    let control of categoriesArray.controls;
+                    let i = index;
+                    trackBy: trackByControl
+                  "
+                >
+                  <span>{{ control.value }}</span>
+                  <button
+                    class="icon-btn icon-btn--tag"
+                    type="button"
+                    (click)="removeCategory(i)"
+                    aria-label="Удалить категорию"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
+
+              <ng-template #noCategories>
+                <p class="category-selector__empty">Категории пока не выбраны.</p>
+              </ng-template>
+            </div>
           </section>
 
           <section class="card">
             <div class="section-title">
               <h3>Изображения</h3>
-              <p>Изображения профиля, превью и галереи </p>
+              <p>Изображения профиля, превью и галереи</p>
             </div>
 
             <div class="image-sections">
@@ -284,27 +309,44 @@
                       <span>Главное изображение на странице подробностей</span>
                     </label>
 
-                    <div class="input-mode-toggle" role="tablist" aria-label="Режим загрузки главного изображения">
+                    <div
+                      class="input-mode-toggle"
+                      role="tablist"
+                      aria-label="Режим загрузки главного изображения"
+                    >
                       <button
                         class="input-mode-toggle__btn"
                         type="button"
-                        [class.input-mode-toggle__btn--active]="getImageInputMode('heroImage') === 'url'"
-                        (click)="setImageInputMode('heroImage', 'url')">
+                        [class.input-mode-toggle__btn--active]="
+                          getImageInputMode('heroImage') === 'url'
+                        "
+                        (click)="setImageInputMode('heroImage', 'url')"
+                      >
                         Ссылка
                       </button>
                       <button
                         class="input-mode-toggle__btn"
                         type="button"
-                        [class.input-mode-toggle__btn--active]="getImageInputMode('heroImage') === 'upload'"
-                        (click)="setImageInputMode('heroImage', 'upload')">
+                        [class.input-mode-toggle__btn--active]="
+                          getImageInputMode('heroImage') === 'upload'
+                        "
+                        (click)="setImageInputMode('heroImage', 'upload')"
+                      >
                         Загрузить файл
                       </button>
                     </div>
                   </div>
 
                   <div class="image-field__body">
-                    <label class="field field--full" *ngIf="getImageInputMode('heroImage') === 'url'; else heroFileInput">
-                      <input type="text" formControlName="heroImage" placeholder="assets/stockWoman.webp" />
+                    <label
+                      class="field field--full"
+                      *ngIf="getImageInputMode('heroImage') === 'url'; else heroFileInput"
+                    >
+                      <input
+                        type="text"
+                        formControlName="heroImage"
+                        placeholder="assets/stockWoman.webp"
+                      />
                     </label>
 
                     <ng-template #heroFileInput>
@@ -313,15 +355,25 @@
                           <input
                             type="file"
                             accept="image/*"
-                            (change)="uploadImageForControl($event, form.controls.heroImage, 'heroImage')" />
+                            (change)="
+                              uploadImageForControl($event, form.controls.heroImage, 'heroImage')
+                            "
+                          />
                           <span class="file-picker__label">Выбрать файл</span>
                         </label>
-                        <span class="upload-status" *ngIf="isImageUploading('heroImage')">Загрузка...</span>
-                        <span class="upload-error" *ngIf="getUploadError('heroImage')">{{ getUploadError('heroImage') }}</span>
+                        <span class="upload-status" *ngIf="isImageUploading('heroImage')"
+                          >Загрузка...</span
+                        >
+                        <span class="upload-error" *ngIf="getUploadError('heroImage')">{{
+                          getUploadError('heroImage')
+                        }}</span>
                       </div>
                     </ng-template>
 
-                    <div class="image-preview" *ngIf="getImagePreview(form.controls.heroImage.value) as heroPreview">
+                    <div
+                      class="image-preview"
+                      *ngIf="getImagePreview(form.controls.heroImage.value) as heroPreview"
+                    >
                       <img [src]="heroPreview" alt="Предпросмотр главного изображения" />
                     </div>
                   </div>
@@ -332,31 +384,49 @@
                 <div class="image-group__head">
                   <div>
                     <h4>Галерея страницы подробностей</h4>
-                    <p>Здесь загружаются фотографии для детальной страницы. Первые три автоматически используются в карточке.</p>
+                    <p>
+                      Здесь загружаются фотографии для детальной страницы. Первые три автоматически
+                      используются в карточке.
+                    </p>
                   </div>
                 </div>
 
                 <div class="array-list" formArrayName="previewImages">
                   <div
                     class="image-array-row"
-                    *ngFor="let control of previewImagesArray.controls; let i = index; trackBy: trackByControl">
+                    *ngFor="
+                      let control of previewImagesArray.controls;
+                      let i = index;
+                      trackBy: trackByControl
+                    "
+                  >
                     <div class="image-field">
                       <div class="image-field__top">
                         <span class="image-field__label">Изображение {{ i + 1 }}</span>
 
-                        <div class="input-mode-toggle" role="tablist" [attr.aria-label]="'Режим превью ' + (i + 1)">
+                        <div
+                          class="input-mode-toggle"
+                          role="tablist"
+                          [attr.aria-label]="'Режим превью ' + (i + 1)"
+                        >
                           <button
                             class="input-mode-toggle__btn"
                             type="button"
-                            [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('previewImages', i)) === 'url'"
-                            (click)="setImageInputMode(getFieldKey('previewImages', i), 'url')">
+                            [class.input-mode-toggle__btn--active]="
+                              getImageInputMode(getFieldKey('previewImages', i)) === 'url'
+                            "
+                            (click)="setImageInputMode(getFieldKey('previewImages', i), 'url')"
+                          >
                             Ссылка
                           </button>
                           <button
                             class="input-mode-toggle__btn"
                             type="button"
-                            [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('previewImages', i)) === 'upload'"
-                            (click)="setImageInputMode(getFieldKey('previewImages', i), 'upload')">
+                            [class.input-mode-toggle__btn--active]="
+                              getImageInputMode(getFieldKey('previewImages', i)) === 'upload'
+                            "
+                            (click)="setImageInputMode(getFieldKey('previewImages', i), 'upload')"
+                          >
                             Загрузить файл
                           </button>
                         </div>
@@ -364,10 +434,14 @@
 
                       <div class="image-field__body">
                         <input
-                          *ngIf="getImageInputMode(getFieldKey('previewImages', i)) === 'url'; else previewFileInput"
+                          *ngIf="
+                            getImageInputMode(getFieldKey('previewImages', i)) === 'url';
+                            else previewFileInput
+                          "
                           [formControlName]="i"
                           type="text"
-                          placeholder="assets/stockWoman.webp" />
+                          placeholder="assets/stockWoman.webp"
+                        />
 
                         <ng-template #previewFileInput>
                           <div class="upload-box">
@@ -375,28 +449,49 @@
                               <input
                                 type="file"
                                 accept="image/*"
-                                (change)="uploadImageForControl($event, control, getFieldKey('previewImages', i))" />
+                                (change)="
+                                  uploadImageForControl(
+                                    $event,
+                                    control,
+                                    getFieldKey('previewImages', i)
+                                  )
+                                "
+                              />
                               <span class="file-picker__label">Выбрать файл</span>
                             </label>
-                            <span class="upload-status" *ngIf="isImageUploading(getFieldKey('previewImages', i))">Загрузка...</span>
-                            <span class="upload-error" *ngIf="getUploadError(getFieldKey('previewImages', i))">
+                            <span
+                              class="upload-status"
+                              *ngIf="isImageUploading(getFieldKey('previewImages', i))"
+                              >Загрузка...</span
+                            >
+                            <span
+                              class="upload-error"
+                              *ngIf="getUploadError(getFieldKey('previewImages', i))"
+                            >
                               {{ getUploadError(getFieldKey('previewImages', i)) }}
                             </span>
                           </div>
                         </ng-template>
 
-                        <div class="image-preview" *ngIf="getImagePreview(control.value) as previewImage">
+                        <div
+                          class="image-preview"
+                          *ngIf="getImagePreview(control.value) as previewImage"
+                        >
                           <img [src]="previewImage" [alt]="'Предпросмотр превью ' + (i + 1)" />
                         </div>
                       </div>
                     </div>
 
-                    <button class="icon-btn" type="button" (click)="removePreviewImage(i)">×</button>
+                    <button class="icon-btn" type="button" (click)="removePreviewImage(i)">
+                      ×
+                    </button>
                   </div>
                 </div>
 
                 <div class="image-group__footer">
-                  <button class="btn btn--soft" type="button" (click)="addPreviewImage()">Добавить изображение</button>
+                  <button class="cta cta--outline" type="button" (click)="addPreviewImage()">
+                    Добавить изображение
+                  </button>
                 </div>
               </section>
             </div>
@@ -409,7 +504,7 @@
                 <p>Каждая секция редактируется через FormArray.</p>
               </div>
 
-              <button class="btn btn--soft" type="button" (click)="addBiographySection()">
+              <button class="cta cta--outline" type="button" (click)="addBiographySection()">
                 Добавить секцию
               </button>
             </div>
@@ -417,17 +512,28 @@
             <div class="biography-list" formArrayName="fullBiography">
               <div
                 class="biography-card"
-                *ngFor="let block of biographyArray.controls; let i = index; trackBy: trackByControl"
-                [formGroupName]="i">
+                *ngFor="
+                  let block of biographyArray.controls;
+                  let i = index;
+                  trackBy: trackByControl
+                "
+                [formGroupName]="i"
+              >
                 <div class="biography-card__head">
                   <h4>Секция {{ i + 1 }}</h4>
-                  <button class="icon-btn" type="button" (click)="removeBiographySection(i)">×</button>
+                  <button class="icon-btn" type="button" (click)="removeBiographySection(i)">
+                    ×
+                  </button>
                 </div>
 
                 <div class="grid">
                   <label class="field">
                     <span>Заголовок</span>
-                    <input type="text" formControlName="title" placeholder="Происхождение и ранние годы" />
+                    <input
+                      type="text"
+                      formControlName="title"
+                      placeholder="Происхождение и ранние годы"
+                    />
                   </label>
 
                   <label class="field field--full">
@@ -441,27 +547,47 @@
                         <span>Изображение секции</span>
                       </label>
 
-                      <div class="input-mode-toggle" role="tablist" [attr.aria-label]="'Режим изображения секции ' + (i + 1)">
+                      <div
+                        class="input-mode-toggle"
+                        role="tablist"
+                        [attr.aria-label]="'Режим изображения секции ' + (i + 1)"
+                      >
                         <button
                           class="input-mode-toggle__btn"
                           type="button"
-                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('fullBiography', i)) === 'url'"
-                          (click)="setImageInputMode(getFieldKey('fullBiography', i), 'url')">
+                          [class.input-mode-toggle__btn--active]="
+                            getImageInputMode(getFieldKey('fullBiography', i)) === 'url'
+                          "
+                          (click)="setImageInputMode(getFieldKey('fullBiography', i), 'url')"
+                        >
                           Ссылка
                         </button>
                         <button
                           class="input-mode-toggle__btn"
                           type="button"
-                          [class.input-mode-toggle__btn--active]="getImageInputMode(getFieldKey('fullBiography', i)) === 'upload'"
-                          (click)="setImageInputMode(getFieldKey('fullBiography', i), 'upload')">
+                          [class.input-mode-toggle__btn--active]="
+                            getImageInputMode(getFieldKey('fullBiography', i)) === 'upload'
+                          "
+                          (click)="setImageInputMode(getFieldKey('fullBiography', i), 'upload')"
+                        >
                           Загрузить файл
                         </button>
                       </div>
                     </div>
 
                     <div class="image-field__body">
-                      <label class="field field--full" *ngIf="getImageInputMode(getFieldKey('fullBiography', i)) === 'url'; else biographyFileInput">
-                        <input type="text" formControlName="image" placeholder="assets/stockWoman.webp" />
+                      <label
+                        class="field field--full"
+                        *ngIf="
+                          getImageInputMode(getFieldKey('fullBiography', i)) === 'url';
+                          else biographyFileInput
+                        "
+                      >
+                        <input
+                          type="text"
+                          formControlName="image"
+                          placeholder="assets/stockWoman.webp"
+                        />
                       </label>
 
                       <ng-template #biographyFileInput>
@@ -470,18 +596,38 @@
                             <input
                               type="file"
                               accept="image/*"
-                              (change)="uploadImageForControl($event, block.controls.image, getFieldKey('fullBiography', i))" />
+                              (change)="
+                                uploadImageForControl(
+                                  $event,
+                                  block.controls.image,
+                                  getFieldKey('fullBiography', i)
+                                )
+                              "
+                            />
                             <span class="file-picker__label">Выбрать файл</span>
                           </label>
-                          <span class="upload-status" *ngIf="isImageUploading(getFieldKey('fullBiography', i))">Загрузка...</span>
-                          <span class="upload-error" *ngIf="getUploadError(getFieldKey('fullBiography', i))">
+                          <span
+                            class="upload-status"
+                            *ngIf="isImageUploading(getFieldKey('fullBiography', i))"
+                            >Загрузка...</span
+                          >
+                          <span
+                            class="upload-error"
+                            *ngIf="getUploadError(getFieldKey('fullBiography', i))"
+                          >
                             {{ getUploadError(getFieldKey('fullBiography', i)) }}
                           </span>
                         </div>
                       </ng-template>
 
-                      <div class="image-preview" *ngIf="getImagePreview(block.controls.image.value) as biographyPreview">
-                        <img [src]="biographyPreview" [alt]="'Предпросмотр изображения секции ' + (i + 1)" />
+                      <div
+                        class="image-preview"
+                        *ngIf="getImagePreview(block.controls.image.value) as biographyPreview"
+                      >
+                        <img
+                          [src]="biographyPreview"
+                          [alt]="'Предпросмотр изображения секции ' + (i + 1)"
+                        />
                       </div>
                     </div>
                   </div>
@@ -495,38 +641,34 @@
               Дата рождения не может быть позже даты смерти.
             </span>
             <ng-template #defaultValidationText>
-              Проверьте обязательные поля: имя, год рождения, область, город, век, описание, главное изображение и тексты биографии.
+              Проверьте обязательные поля: имя, год рождения, область, город, век, описание, главное
+              изображение и тексты биографии.
             </ng-template>
           </div>
 
           <div class="form-actions form-actions--inline">
-            <button class="btn btn--soft" type="button" (click)="startCreateRecord()">Очистить форму</button>
+            <button class="cta cta--outline" type="button" (click)="startCreateRecord()">
+              Очистить форму
+            </button>
           </div>
         </form>
-
-       
       </section>
     </div>
   </section>
 
   <div class="floating-save">
     <button
-      class="btn floating-save__btn"
+      class="cta floating-save__btn"
       type="button"
       (click)="save()"
-      [disabled]="form.invalid || isLoading() || isSaving() || hasUploadingImages()">
+      [disabled]="form.invalid || isLoading() || isSaving() || hasUploadingImages()"
+    >
       {{ isSaving() ? 'Сохраняем...' : 'Сохранить изменения' }}
     </button>
   </div>
 
-  <div
-    class="map-picker-modal"
-    *ngIf="isCoordinatePickerOpen()"
-    (click)="closeCoordinatePicker()">
-    <section
-      class="map-picker-modal__dialog"
-      (click)="$event.stopPropagation()"
-      aria-label="Выбор координат на карте">
+  <div class="map-picker-modal" *ngIf="isCoordinatePickerOpen()" (click)="closeCoordinatePicker()">
+    <section class="map-picker-modal__dialog" (click)="$event.stopPropagation()">
       <div class="map-picker-modal__head">
         <div>
           <p class="panel-head__eyebrow">Координаты на карте</p>
@@ -547,19 +689,17 @@
         </div>
       </div>
 
-      <p class="map-picker-modal__hint">
-        Нажмите на нужную точку на карте. Временный маркер покажет выбранное место, а координаты обновятся сразу.
-      </p>
-
       <div class="map-picker-modal__frame">
         <div #coordinatePickerMap class="map-picker-modal__map"></div>
       </div>
 
-      <p class="map-picker-modal__source">Источник карты: OpenStreetMap</p>
-
       <div class="map-picker-modal__actions">
-        <button class="btn btn--ghost" type="button" (click)="closeCoordinatePicker()">Отмена</button>
-        <button class="btn" type="button" (click)="confirmCoordinateSelection()">Подтвердить выбор</button>
+        <button class="cta cta--outline" type="button" (click)="closeCoordinatePicker()">
+          Отмена
+        </button>
+        <button class="cta" type="button" (click)="confirmCoordinateSelection()">
+          Подтвердить выбор
+        </button>
       </div>
     </section>
   </div>

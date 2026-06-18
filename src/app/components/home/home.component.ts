@@ -11,6 +11,5 @@ import { FirebaseService } from '../../services/firebase.service';
 })
 export class HomeComponent {
   private readonly firebaseService = inject(FirebaseService);
-
   readonly isAdmin$ = this.firebaseService.isAdmin$;
 }
