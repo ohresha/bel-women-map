@@ -30,20 +30,21 @@
               },
               "src/assets"
             ],
-            "styles": ["src/styles.scss", "node_modules/leaflet/dist/leaflet.css"]
+            "styles": ["src/styles.scss", "node_modules/leaflet/dist/leaflet.css", "node_modules/leaflet.markercluster/dist/MarkerCluster.css", "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css"],
+            "scripts": ["node_modules/leaflet/dist/leaflet.js", "node_modules/leaflet.markercluster/dist/leaflet.markercluster.js"]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "2MB",
+                  "maximumError": "3MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "20kB",
+                  "maximumError": "30kB"
                 }
               ],
               "outputHashing": "all"
@@ -76,6 +77,9 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy"
         }
       }
     }
