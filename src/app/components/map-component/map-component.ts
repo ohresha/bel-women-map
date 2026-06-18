@@ -3,8 +3,7 @@ import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, E
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import * as L from 'leaflet';
-// import 'leaflet.markercluster';
-import 'leaflet.markercluster/dist/leaflet.markercluster-src.js';
+import 'leaflet.markercluster';
 import { MapDataService, MapFilters, WomanDetails, WomanProfile } from '../../services/map-data.service';
 import { HttpClient } from '@angular/common/http';
 
@@ -23,7 +22,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('filtersToggle') filtersToggle!: ElementRef<HTMLButtonElement>;
   
   private map?: L.Map;
-  private markersLayer?: any;
+  private markersLayer?: L.LayerGroup;
   private maskLayer?: L.GeoJSON;
   private bordersLayer?: L.GeoJSON;
   private timerId?: number;
@@ -228,25 +227,38 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       maskPane.style.zIndex = '350';
     }
 
-    // === ФИКС ДЛЯ ANGULAR 21 PRODUCTION СБОРКИ ===
-    // Явно проверяем и вызываем конструктор через глобальный контекст или приведение к any
-    const leafletInstance = L as any;
-    if (typeof leafletInstance.markerClusterGroup !== 'function') {
-      console.warn('MarkerClusterGroup не найден в объекте L, пробуем альтернативную инициализацию');
+    this.markersLayer = this.createMarkerClusterLayer();
+    this.markersLayer.addTo(this.map);
+    this.addBorders();
+  }
+
+  private createMarkerClusterLayer(): L.LayerGroup {
+    const leafletInstance = L as typeof L & {
+      markerClusterGroup?: (options: {
+        showCoverageOnHover: boolean;
+        spiderfyOnMaxZoom: boolean;
+        chunkedLoading: boolean;
+        chunkDelay: number;
+        maxClusterRadius: number;
+        iconCreateFunction: (cluster: any) => L.DivIcon;
+      }) => L.LayerGroup;
+    };
+
+    const markerClusterGroupFactory =
+      leafletInstance.markerClusterGroup ?? (globalThis as typeof globalThis & { L?: typeof leafletInstance }).L?.markerClusterGroup;
+
+    if (typeof markerClusterGroupFactory !== 'function') {
+      throw new Error('Leaflet markercluster plugin is not loaded');
     }
 
-    this.markersLayer = leafletInstance.markerClusterGroup({
+    return markerClusterGroupFactory({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       chunkedLoading: true,
       chunkDelay: 40,
       maxClusterRadius: 44,
-      iconCreateFunction: (cluster: any) => this.createClusterIcon(cluster)
+      iconCreateFunction: (cluster) => this.createClusterIcon(cluster)
     });
-    // =============================================
-
-    this.markersLayer.addTo(this.map);
-    this.addBorders();
   }
 
   private addBorders(): void {
