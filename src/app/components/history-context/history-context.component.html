@@ -5,7 +5,7 @@
   </header>
 
   <section class="hero">
-    <img class="hero__image" src="assets/history-context/hero_flag.jpg" alt="" />
+    <img class="hero__image" src="assets/history-context/flag2.jpg" alt="" />
     <div class="hero__veil"></div>
     <div class="hero__content">
       <p class="kicker">Исторический экскурс</p>
@@ -129,6 +129,14 @@
       <button class="symbol-viewer__close" type="button" aria-label="Закрыть" (click)="closeViewer()">×</button>
       <div class="symbol-viewer__body">
         <img class="symbol-viewer__img" [src]="viewer()?.src" [alt]="viewer()?.alt" />
+        <a
+          class="symbol-viewer__details"
+          [href]="viewer()?.detailsUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ viewer()?.detailsLabel }}
+        </a>
       </div>
     </div>
   </div>
@@ -151,6 +159,14 @@
             allowfullscreen
           ></iframe>
         </div>
+        <a
+          class="symbol-viewer__details"
+          [href]="anthemDetailsUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ anthemDetailsLabel }}
+        </a>
       </div>
     </div>
   </div>

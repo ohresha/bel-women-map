@@ -16,6 +16,52 @@
   @media (max-width: 760px) {
     padding: 14px;
   }
+
+  &__corner {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    height: auto;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    opacity: 0.92;
+  }
+
+  &__corner--left {
+    left: 0;
+    width: clamp(240px, 10vw, 380px);
+    transform-origin: bottom left;
+  }
+
+  &__corner--right {
+    right: 0;
+    width: clamp(240px, 26vw, 380px);
+    transform-origin: bottom right;
+  }
+
+  &__top-banner {
+    display: none;
+    position: absolute;
+    top: -198px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(100%, 1600px);
+    height: auto;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+
+  @media (min-width: 993px) {
+    &__corner {
+      display: block;
+    }
+
+    &__top-banner {
+      display: block;
+    }
+  }
 }
 
 .home-header {
@@ -30,9 +76,8 @@
     width: 88px;
     height: 88px;
 
-    @media (max-width: 760px) {
-      width: 54px;
-      height: 54px;
+    @media (max-width: 992.98px) {
+      display: none;
     }
   }
 
@@ -42,23 +87,21 @@
     object-fit: cover;
     border-radius: 3px;
 
-    @media (max-width: 760px) {
-      width: 96px;
-      height: 54px;
-      border-radius: 10px;
+    @media (max-width: 992.98px) {
+      display: none;
     }
   }
 
-  &__mobile-logo {
+  &__mobile-banner {
     display: none;
-    width: 88px;
-    height: 88px;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
     object-fit: contain;
+    border-radius: 14px;
 
-    @media (max-width: 760px) {
+    @media (max-width: 992.98px) {
       display: block;
-      width: 54px;
-      height: 54px;
     }
   }
 
@@ -67,7 +110,11 @@
     row-gap: 16px;
   }
 
-  @media (max-width: 760px) {
+  @media (max-width: 992.98px) {
+    justify-content: center;
+  }
+
+  @media (max-width: 992.98px) {
     padding: 4px 0 0;
   }
 }
@@ -116,12 +163,12 @@
     justify-content: center;
     min-height: 100%;
 
-    @media (max-width: 991.98px) {
+    @media (max-width: 992.98px) {
       min-height: 220px;
       width: 100%;
     }
 
-    @media (max-width: 760px) {
+    @media (max-width: 992.98px) {
       display: none;
     }
   }

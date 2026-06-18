@@ -10,6 +10,8 @@ type SymbolViewerState = {
   src: string;
   alt: string;
   title: string;
+  detailsLabel: string;
+  detailsUrl: string;
 };
 
 const SYMBOL_MAP: Record<SymbolViewerKind, SymbolViewerState> = {
@@ -18,12 +20,16 @@ const SYMBOL_MAP: Record<SymbolViewerKind, SymbolViewerState> = {
     src: 'assets/Emblem_of_Belarus.svg',
     alt: 'Герб Беларуси',
     title: 'Герб',
+    detailsLabel: 'Прочитать подробнее о Гербе',
+    detailsUrl: 'https://president.gov.by/ru/gosudarstvo/simvolika/gerb',
   },
   flag: { 
     kind: 'flag', 
-    src: 'assets/Flag_of_Belarus.svg', 
+    src: 'assets/history-context/flag2.jpg', 
     alt: 'Флаг Беларуси', 
-    title: 'Флаг' 
+    title: 'Флаг',
+    detailsLabel: 'Прочитать подробнее о Флаге',
+    detailsUrl: 'https://president.gov.by/ru/gosudarstvo/simvolika/flag',
   },
 };
 
@@ -39,6 +45,8 @@ export class HistoryContextComponent {
 
   viewer = signal<SymbolViewerState | null>(null);
   anthemOpen = signal(false);
+  readonly anthemDetailsLabel = 'Прочитать подробнее о Гимне';
+  readonly anthemDetailsUrl = 'https://president.gov.by/ru/gosudarstvo/simvolika/gimn';
 
   readonly anthemUrl: SafeResourceUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
     `https://www.youtube.com/embed/5UIJ44t25bc?autoplay=1`,

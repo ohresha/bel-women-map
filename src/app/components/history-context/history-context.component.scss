@@ -355,6 +355,22 @@
     display: block;
   }
 
+  &__details {
+    font-size: 14px;
+    font-weight: 700;
+    color: $color-primary-dark;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-align: center;
+    transition: color 0.2s ease, opacity 0.2s ease;
+
+    &:hover,
+    &:focus-visible {
+      color: $color-primary;
+      opacity: 0.9;
+    }
+  }
+
   // Плеер YouTube — адаптивная обёртка
   &__player {
     width: 100%;

@@ -87,10 +87,8 @@ export class MapDataService {
   getCategories(): string[] {
     return [
       'Наука',
-      'Культура',
       'Искусство',
       'Спорт',
-      'Просвещение',
       'Общественная деятельность'
     ];
   }
