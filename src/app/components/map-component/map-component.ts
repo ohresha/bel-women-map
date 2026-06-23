@@ -399,7 +399,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
           src="${safeSrc}"
           alt="${safeName}"
           loading="lazy"
-          onerror="this.src='assets/stockWoman.webp'"
+          onerror="this.src='assets/stockWoman.jpg'"
           style="
             width: 48px;
             height: 48px;
@@ -613,8 +613,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const candidate =
       details?.heroImage ??
       woman.images?.[0] ??
-      'assets/stockWoman.webp';
-    return candidate || 'assets/stockWoman.webp';
+      'assets/stockWoman.jpg';
+    return candidate || 'assets/stockWoman.jpg';
   }
 
   private createTooltipHtml(woman: WomanProfile): string {

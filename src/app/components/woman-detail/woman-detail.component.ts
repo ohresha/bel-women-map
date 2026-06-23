@@ -20,7 +20,6 @@ import {
   WomanDetails,
   WomanProfile
 } from '../../services/map-data.service';
-import { FadeInOnScrollDirective } from '../../directives/fade-in-on-scroll.directive';
 
 type TextBiographyBlock    = Extract<BiographyBlock, { type: 'text' }>;
 type QuoteBiographyBlock   = Extract<BiographyBlock, { type: 'quote' }>;
@@ -46,7 +45,7 @@ type RenderBlock =
 
 @Component({
   selector: 'app-woman-detail',
-  imports: [RouterLink, FadeInOnScrollDirective],
+  imports: [RouterLink],
   templateUrl: './woman-detail.component.html',
   styleUrl: './woman-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

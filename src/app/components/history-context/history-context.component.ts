@@ -17,7 +17,7 @@ type SymbolViewerState = {
 const SYMBOL_MAP: Record<SymbolViewerKind, SymbolViewerState> = {
   emblem: {
     kind: 'emblem',
-    src: 'assets/Emblem_of_Belarus.svg',
+    src: 'assets/history-context/Emblem_of_Belarus.svg',
     alt: 'Герб Беларуси',
     title: 'Герб',
     detailsLabel: 'Прочитать подробнее о Гербе',
@@ -25,7 +25,7 @@ const SYMBOL_MAP: Record<SymbolViewerKind, SymbolViewerState> = {
   },
   flag: { 
     kind: 'flag', 
-    src: 'assets/history-context/flag2.jpg', 
+    src: 'assets/history-context/hero_flag.jpg', 
     alt: 'Флаг Беларуси', 
     title: 'Флаг',
     detailsLabel: 'Прочитать подробнее о Флаге',

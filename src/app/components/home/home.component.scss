@@ -190,6 +190,8 @@
     margin: 8px 0;
     font-weight: 800;
     letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: $color-primary;
 
     @media (max-width: 760px) {
       font-size: clamp(26px, 7vw, 38px);

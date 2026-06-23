@@ -1,7 +1,7 @@
 @if (profile && details) {
   <main class="detail-page">
     <div class="detail-shell">
-      <aside class="toc fade-in" fadeInOnScroll aria-label="Содержание статьи">
+      <aside class="toc" aria-label="Содержание статьи">
         <div class="toc__panel">
           <p class="toc__eyebrow">Навигация</p>
           <h2 class="toc__title">Содержание</h2>
@@ -32,7 +32,7 @@
       </aside>
 
       <div class="detail-column">
-        <nav class="detail-nav fade-in" fadeInOnScroll aria-label="Навигация по странице">
+        <nav class="detail-nav" aria-label="Навигация по странице">
           <a class="back-link" [routerLink]="['/map']">К карте</a>
         </nav>
 
@@ -58,8 +58,7 @@
                 @case ('section') {
                   <section
                     #bioSection
-                    class="story-block fade-in"
-                    fadeInOnScroll
+                    class="story-block"
                     [id]="block.section.id"
                     [class.story-block--no-media]="!block.section.imageSrc"
                     [class.story-block--media-left]="block.section.imageSrc && block.section.imageSide === 'left'"
@@ -93,7 +92,7 @@
                 }
 
                 @case ('quote') {
-                  <section class="quote-block fade-in" fadeInOnScroll>
+                  <section class="quote-block">
                     <blockquote>{{ block.quote.text }}</blockquote>
                     @if (block.quote.author) {
                       <p class="quote-block__author">— {{ block.quote.author }}</p>
@@ -102,7 +101,7 @@
                 }
 
                 @case ('gallery') {
-                  <section class="inline-gallery fade-in" fadeInOnScroll>
+                  <section class="inline-gallery">
                     @if (block.title) { <h2>{{ block.title }}</h2> }
                     <div class="inline-gallery__grid">
                       @for (image of block.images; track image.src) {
@@ -118,7 +117,7 @@
             }
           </section>
 
-          <section class="gallery fade-in" fadeInOnScroll aria-labelledby="gallery-title">
+          <section class="gallery" aria-labelledby="gallery-title">
             <div class="gallery__header">
               <p class="gallery__eyebrow">Фотографии</p>
               <h2 id="gallery-title">Галерея</h2>
