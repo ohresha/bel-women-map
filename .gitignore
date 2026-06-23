@@ -5,11 +5,19 @@
 /tmp
 /out-tsc
 /bazel-out
+.angular/
+.tmp/
+/.tmp/
+.tmp
+/.tmp
+*.tsbuildinfo
 
 # Node
 /node_modules
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # IDEs and editors
 .idea/
@@ -30,8 +38,6 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
-/.angular/cache
-.angular/
 .sass-cache/
 /connect.lock
 /coverage
@@ -39,6 +45,10 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+*.log
+*.tmp
+*.swp
+*.swo
 
 # Firebase
 .firebase/
@@ -50,8 +60,9 @@ ui-debug.log
 # System files
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-/.agents/
-/.tmp/
-/.vscode/
-/environments/*
+/src/environments/*.local.ts
+/src/environments/*.development.ts
+/src/environments/*.environment.ts
+/src/environments/*.secret.ts
